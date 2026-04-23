@@ -22,15 +22,15 @@ local function CreateWindow(theme)
     end
 
     local Window = Rayfield:CreateWindow({
-        Name = "Silent Scripts V2.3 (Comeback)",
-        Icon = 0,
+        Name =  "Silent Scripts V3.0 (Comeback)",
+        Icon = 72666860753983,
         LoadingTitle = "Loading...",
         LoadingSubtitle = "by Pingz0 | Idea´s by Pyrotec_7",
         ShowText = "Silent Script",
         Theme = theme or "Default",
         ToggleUIKeybind = "K",
-        DisableRayfieldPrompts = false,
-        DisableBuildWarnings = false,
+        DisableRayfieldPrompts = true,
+        DisableBuildWarnings = true,
         ConfigurationSaving = { Enabled = false },
         KeySystem = false
     })
@@ -229,121 +229,491 @@ local NoclipToggle = MainTab:CreateToggle({
     end,
 })
 
+    -- ESP System
     local ESPDrawings = {}
     local ESPConnections = {}
+    local ESPTracers = {}
     local ESPEnabled = false
+    local TracersEnabled = false
+    local ChamsEnabled = false
+    local ESPRefreshConnection = nil
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     local Camera = workspace.CurrentCamera
+    local RunService = game:GetService("RunService")
 
-    local ESPColor = Color3.new(1, 0, 0) -- Rot (default)
+    -- ESP Colors
+    local ESPColors = {
+        ["Red"] = Color3.new(1, 0, 0),
+        ["Blue"] = Color3.new(0, 0, 1),
+        ["Green"] = Color3.new(0, 1, 0),
+        ["Yellow"] = Color3.new(1, 1, 0),
+        ["Purple"] = Color3.new(0.5, 0, 0.5),
+        ["White"] = Color3.new(1, 1, 1),
+        ["Black"] = Color3.new(0, 0, 0),
+        ["Orange"] = Color3.new(1, 0.5, 0),
+        ["Pink"] = Color3.new(1, 0, 0.5),
+        ["Cyan"] = Color3.new(0, 1, 1),
+        ["Transparent"] = Color3.new(1, 1, 1)
+    }
+    
+    local ESPColor = ESPColors["Red"]
 
-    -- Funktion: Alles ESP löschen
+    -- Function to clean up tracers specifically
+    local function clearAllTracers()
+        for _, tracerData in pairs(ESPTracers) do
+            if tracerData.connection then
+                pcall(function() tracerData.connection:Disconnect() end)
+            end
+            if tracerData.drawing then
+                pcall(function() tracerData.drawing:Remove() end)
+            end
+        end
+        ESPTracers = {}
+    end
+
+    -- Function to highlight character with perfect outline
+    local function createPerfectOutline(character, color)
+        local drawings = {}
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESPPerfectOutline"
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.FillColor = Color3.new(1, 1, 1)
+        highlight.FillTransparency = 1
+        highlight.OutlineColor = color
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+        table.insert(drawings, highlight)
+        
+        return drawings
+    end
+
+    -- Function to create transparent/chams effect
+    local function createChamsEffect(character, color)
+        local drawings = {}
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESPChams"
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.FillColor = color
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = color
+        highlight.OutlineTransparency = 0.3
+        highlight.Parent = character
+        table.insert(drawings, highlight)
+        
+        return drawings
+    end
+
+    -- Function to create clean tracers
+    local function createTracers(player, color)
+        local tracerData = {}
+        
+        local tracer = Drawing.new("Line")
+        tracer.Name = "ESPTracer"
+        tracer.Visible = false
+        tracer.Color = color
+        tracer.Thickness = 1.5
+        tracer.Transparency = 0.3
+        
+        local tracerConnection = RunService.RenderStepped:Connect(function()
+            if not TracersEnabled then
+                tracer.Visible = false
+                return
+            end
+            
+            local character = player.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then
+                tracer.Visible = false
+                return
+            end
+            
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            local head = character:FindFirstChild("Head")
+            local targetPart = head or rootPart
+            
+            if targetPart then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                
+                if onScreen then
+                    local startPos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    local endPos = Vector2.new(screenPos.X, screenPos.Y)
+                    
+                    tracer.From = startPos
+                    tracer.To = endPos
+                    tracer.Color = ESPColor
+                    tracer.Thickness = 1.5
+                    tracer.Transparency = 0.3
+                    tracer.Visible = true
+                else
+                    tracer.Visible = false
+                end
+            else
+                tracer.Visible = false
+            end
+        end)
+        
+        tracerData.drawing = tracer
+        tracerData.connection = tracerConnection
+        tracerData.player = player
+        
+        ESPTracers[player] = tracerData
+        
+        return tracerData
+    end
+
+    -- Function to create nametag
+    local function createNametag(player, color)
+        local drawings = {}
+        local character = player.Character
+        if not character then return drawings end
+        
+        local head = character:FindFirstChild("Head")
+        if not head then return drawings end
+        
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESPName"
+        billboard.Size = UDim2.new(0, 100, 0, 20)
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = player.Name
+        label.TextColor3 = color
+        label.TextScaled = true
+        label.Font = Enum.Font.SourceSansBold
+        label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        label.TextStrokeTransparency = 0.5
+        label.Parent = billboard
+        
+        table.insert(drawings, billboard)
+        
+        return drawings
+    end
+
+    -- Function to completely wipe all ESP elements
     local function clearAllESP()
+        clearAllTracers()
+        
+        -- Stop refresh connection
+        if ESPRefreshConnection then
+            ESPRefreshConnection:Disconnect()
+            ESPRefreshConnection = nil
+        end
+        
         for _, conn in pairs(ESPConnections) do
-            if typeof(conn) == "RBXScriptConnection" then
-                conn:Disconnect()
+            if conn and typeof(conn) == "RBXScriptConnection" then
+                pcall(function() conn:Disconnect() end)
             end
         end
         ESPConnections = {}
 
-        for _, drawings in pairs(ESPDrawings) do  
-            for _, obj in pairs(drawings) do  
-                if typeof(obj) == "Instance" then  
-                    obj:Destroy()  
-                elseif typeof(obj) == "Drawing" then  
-                    obj:Remove()  
-                end  
-            end  
-        end  
+        for _, drawings in pairs(ESPDrawings) do
+            if drawings then
+                for _, obj in pairs(drawings) do
+                    if obj then
+                        pcall(function()
+                            if typeof(obj) == "Instance" then
+                                if obj.Parent then
+                                    obj:Destroy()
+                                end
+                            elseif typeof(obj) == "Drawing" then
+                                obj:Remove()
+                            end
+                        end)
+                    end
+                end
+            end
+        end
         ESPDrawings = {}
+        
+        -- Force clean any remaining ESP objects
+        for _, player in pairs(Players:GetPlayers()) do
+            if player and player.Character then
+                for _, obj in pairs(player.Character:GetDescendants()) do
+                    if obj.Name == "ESPPerfectOutline" or 
+                       obj.Name == "ESPChams" or 
+                       obj.Name == "ESPName" then
+                        pcall(function() obj:Destroy() end)
+                    end
+                end
+            end
+        end
     end
 
+    -- Function to update tracer colors
+    local function updateTracerColors(color)
+        for _, tracerData in pairs(ESPTracers) do
+            if tracerData.drawing then
+                tracerData.drawing.Color = color
+            end
+        end
+    end
+
+    -- Function to create ESP for a single player
+    local function createESP(player)
+        if player == LocalPlayer then return end
+        
+        -- Clean up existing ESP for this player first
+        if ESPDrawings[player] then
+            for _, obj in pairs(ESPDrawings[player]) do
+                if obj then
+                    pcall(function()
+                        if typeof(obj) == "Instance" then
+                            if obj.Parent then obj:Destroy() end
+                        elseif typeof(obj) == "Drawing" then
+                            obj:Remove()
+                        end
+                    end)
+                end
+            end
+        end
+        
+        -- Clean up existing tracers for this player
+        if ESPTracers[player] then
+            if ESPTracers[player].connection then
+                pcall(function() ESPTracers[player].connection:Disconnect() end)
+            end
+            if ESPTracers[player].drawing then
+                pcall(function() ESPTracers[player].drawing:Remove() end)
+            end
+            ESPTracers[player] = nil
+        end
+        
+        local drawings = {}
+        ESPDrawings[player] = drawings
+
+        local function updateESP()
+            local character = player.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+            -- Clean up old ESP elements on character first
+            for _, obj in pairs(character:GetDescendants()) do
+                if obj.Name == "ESPPerfectOutline" or 
+                   obj.Name == "ESPChams" or 
+                   obj.Name == "ESPName" then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+
+            local displayColor = ESPColor
+            
+            if ChamsEnabled then
+                local chamsDrawings = createChamsEffect(character, displayColor)
+                for _, drawing in pairs(chamsDrawings) do
+                    table.insert(drawings, drawing)
+                end
+            else
+                local outlineDrawings = createPerfectOutline(character, displayColor)
+                for _, drawing in pairs(outlineDrawings) do
+                    table.insert(drawings, drawing)
+                end
+            end
+            
+            local nameDrawings = createNametag(player, displayColor)
+            for _, drawing in pairs(nameDrawings) do
+                table.insert(drawings, drawing)
+            end
+            
+            -- Only create tracers if enabled
+            if TracersEnabled and not ESPTracers[player] then
+                createTracers(player, displayColor)
+            end
+        end
+
+        updateESP()
+
+        -- Handle respawn
+        local respawnConnection = player.CharacterAdded:Connect(function(char)
+            task.wait(0.5)
+            updateESP()
+        end)
+        table.insert(ESPConnections, respawnConnection)
+    end
+
+    -- Function to refresh ESP for all players
+    local function refreshAllESP()
+        if not ESPEnabled then return end
+        clearAllESP()
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                createESP(player)
+            end
+        end
+        
+        -- Start auto-refresh if not already running
+        if not ESPRefreshConnection then
+            ESPRefreshConnection = RunService.Heartbeat:Connect(function()
+                -- This will run every frame, we'll use a time check for 1 second intervals
+            end)
+        end
+    end
+    
+    -- Auto-refresh every 1 second
+    local lastRefresh = 0
+    RunService.Heartbeat:Connect(function()
+        if ESPEnabled then
+            local currentTime = tick()
+            if currentTime - lastRefresh >= 1 then
+                lastRefresh = currentTime
+                -- Re-apply ESP to all players
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        createESP(player)
+                    end
+                end
+            end
+        end
+    end)
+
+    -- ESP Tab
+    local ESPTab = Window:CreateTab("| ESP", 6523858394)
+
     -- ESP Toggle
-    MainTab:CreateToggle({
-        Name = "ESP (Red Outline + NameTag)",
+    ESPTab:CreateToggle({
+        Name = "Enable ESP",
         CurrentValue = false,
         Callback = function(state)
             ESPEnabled = state
-
-            clearAllESP()  
-            if not state then return end  
-
-            local function createESP(player)  
-                if player == LocalPlayer then return end  
-                local drawings = {}  
-                ESPDrawings[player] = drawings  
-
-                local function update()  
-                    local character = player.Character  
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then return end  
-
-                    -- Body Outline  
-                    for _, part in pairs(character:GetDescendants()) do  
-                        if part:IsA("BasePart") and not part:FindFirstChild("ESPBox") then  
-                            local box = Instance.new("BoxHandleAdornment")  
-                            box.Name = "ESPBox"  
-                            box.Adornee = part  
-                            box.AlwaysOnTop = true  
-                            box.ZIndex = 10  
-                            box.Size = part.Size  
-                            box.Color3 = ESPColor  
-                            box.Transparency = 0.4  
-                            box.Parent = part  
-                            table.insert(drawings, box)  
-                        end  
-                    end  
-
-                    -- Name Tag  
-                    local head = character:FindFirstChild("Head")  
-                    if head and not head:FindFirstChild("ESPName") then  
-                        local tag = Instance.new("BillboardGui", head)  
-                        tag.Name = "ESPName"  
-                        tag.Size = UDim2.new(0, 100, 0, 20)  
-                        tag.StudsOffset = Vector3.new(0, 2.5, 0)  
-                        tag.AlwaysOnTop = true  
-
-                        local label = Instance.new("TextLabel", tag)  
-                        label.Size = UDim2.new(1, 0, 1, 0)  
-                        label.BackgroundTransparency = 1  
-                        label.Text = player.Name  
-                        label.TextColor3 = ESPColor  
-                        label.TextScaled = true  
-                        label.Font = Enum.Font.SourceSansBold  
-                        table.insert(drawings, tag)  
-                    end  
-                end  
-
-                update()  
-
-                -- Update ESP on respawn  
-                local conn = player.CharacterAdded:Connect(function()  
-                    task.wait(1)  
-                    update()  
-                end)  
-                table.insert(ESPConnections, conn)  
-            end  
-
-            -- Add ESP for current players  
-            for _, player in pairs(Players:GetPlayers()) do  
-                createESP(player)  
-            end  
-
-            -- Handle new players  
-            table.insert(ESPConnections, Players.PlayerAdded:Connect(function(player)  
-                player.CharacterAdded:Connect(function()  
-                    task.wait(1)  
-                    createESP(player)  
-                end)  
-            end))  
+            if state then
+                refreshAllESP()
+                lastRefresh = 0 -- Reset refresh timer
+                
+                -- Handle new players joining
+                local playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+                    if ESPEnabled then
+                        -- Wait for character to load then create ESP
+                        local function setupNewPlayer()
+                            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                createESP(player)
+                            else
+                                player.CharacterAdded:Wait()
+                                task.wait(0.5)
+                                createESP(player)
+                            end
+                        end
+                        task.spawn(setupNewPlayer)
+                    end
+                end)
+                table.insert(ESPConnections, playerAddedConnection)
+                
+                -- Handle players leaving
+                local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
+                    if ESPDrawings[player] then
+                        for _, obj in pairs(ESPDrawings[player]) do
+                            if obj then
+                                pcall(function()
+                                    if typeof(obj) == "Instance" then
+                                        if obj.Parent then obj:Destroy() end
+                                    elseif typeof(obj) == "Drawing" then
+                                        obj:Remove()
+                                    end
+                                end)
+                            end
+                        end
+                        ESPDrawings[player] = nil
+                    end
+                    if ESPTracers[player] then
+                        if ESPTracers[player].connection then
+                            pcall(function() ESPTracers[player].connection:Disconnect() end)
+                        end
+                        if ESPTracers[player].drawing then
+                            pcall(function() ESPTracers[player].drawing:Remove() end)
+                        end
+                        ESPTracers[player] = nil
+                    end
+                end)
+                table.insert(ESPConnections, playerRemovingConnection)
+            else
+                clearAllESP()
+                lastRefresh = 0
+            end
         end
     })
 
-    -- Extra Button: Clear ESP
-    MainTab:CreateButton({
+    -- Chams Toggle
+    ESPTab:CreateToggle({
+        Name = "Chams (See Through Walls)",
+        CurrentValue = false,
+        Callback = function(state)
+            ChamsEnabled = state
+            if ESPEnabled then
+                refreshAllESP()
+            end
+        end
+    })
+
+    -- Tracers Toggle
+    ESPTab:CreateToggle({
+        Name = "Enable Tracers",
+        CurrentValue = false,
+        Callback = function(state)
+            TracersEnabled = state
+            if not state then
+                clearAllTracers()
+            end
+            if ESPEnabled then
+                refreshAllESP()
+            end
+        end
+    })
+
+    -- Color Dropdown
+    local colorNames = {}
+    for name, _ in pairs(ESPColors) do
+        table.insert(colorNames, name)
+    end
+
+    ESPTab:CreateDropdown({
+        Name = "ESP Color",
+        Options = colorNames,
+        CurrentOption = {"Red"},
+        MultipleOptions = false,
+        Callback = function(option)
+            local colorName = option
+            if type(option) == "table" then
+                colorName = option[1]
+            end
+            if ESPColors[colorName] then
+                ESPColor = ESPColors[colorName]
+                updateTracerColors(ESPColor)
+                if ESPEnabled then
+                    refreshAllESP()
+                end
+            end
+        end
+    })
+
+    -- Clear ESP Button
+    ESPTab:CreateButton({
         Name = "Clear All ESP",
         Callback = function()
             clearAllESP()
+            if ESPEnabled then
+                refreshAllESP()
+            end
+        end
+    })
+
+    -- Force Clear Button
+    ESPTab:CreateButton({
+        Name = "Force Clear ESP",
+        Callback = function()
+            ESPEnabled = false
+            TracersEnabled = false
+            ChamsEnabled = false
+            clearAllESP()
+            
+            Rayfield:Notify({
+                Title = "ESP Cleared",
+                Content = "All ESP elements have been force cleaned",
+                Duration = 2,
+                Image = 4483362458
+            })
         end
     })
 
@@ -678,18 +1048,21 @@ local Camera = workspace.CurrentCamera
             startInvisibility()
         end
     end)
+    
 ----------------------------------------------------
 -- Aimbot Settings
 ----------------------------------------------------
 local AimbotEnabled = false
+local MouseAimbotEnabled = false
 local ShowFOV = false
 local FOVRadius = 100
-local DynamicFOVRadius = FOVRadius -- Dynamic FOV for tracking
+local DynamicFOVRadius = FOVRadius
 local FOVCircle
 local AimbotKey = "T"
-local Smoothness = 0.2 -- Default smoothness (0.05 to 0.5)
-local CurrentTarget = nil -- Track current target for stickiness
-local MaxFOVIncrease = 1.5 -- Max FOV increase factor (e.g., 1.5x)
+local Smoothness = 0.2
+local CurrentTarget = nil
+local MaxFOVIncrease = 1.5
+local MouseSensitivity = 1.0 -- Mouse movement sensitivity
 
 ----------------------------------------------------
 -- Aimbot Tab
@@ -698,7 +1071,7 @@ local AimbotTab = Window:CreateTab("| Aimbot", 10769687353)
 
 -- Smooth RGB Color Cycle
 local function GetRGBColor()
-    local time = tick() * 0.5 -- Slower color change
+    local time = tick() * 0.5
     local r = (math.sin(time) + 1) / 2
     local g = (math.sin(time + 2 * math.pi / 3) + 1) / 2
     local b = (math.sin(time + 4 * math.pi / 3) + 1) / 2
@@ -734,29 +1107,125 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Find Closest Target with Enhanced Stickiness
-local function GetClosestPlayer()
+-- Get mouse position
+local function getMousePosition()
+    return UserInputService:GetMouseLocation()
+end
+
+-- Move mouse to position
+local function moveMouseTo(targetX, targetY)
+    local currentMousePos = getMousePosition()
+    local deltaX = targetX - currentMousePos.X
+    local deltaY = targetY - currentMousePos.Y
+    
+    -- Apply smoothness
+    local smoothFactor = math.clamp(Smoothness * 10, 1, 20)
+    local moveX = deltaX / smoothFactor
+    local moveY = deltaY / smoothFactor
+    
+    -- Move mouse relative to current position
+    mousemoverel(moveX * MouseSensitivity, moveY * MouseSensitivity)
+end
+
+-- Find Closest Target for mouse aimbot
+local function GetClosestPlayerForMouse()
     local closestPlayer = CurrentTarget
-    local shortestDistance = DynamicFOVRadius * 1.5 -- Larger radius for current target
-    local cameraCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local shortestDistance = DynamicFOVRadius * 1.5
+    local mousePos = getMousePosition()
 
     -- Check if current target is still valid
     if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
         local head = closestPlayer.Character.Head
         local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
         if onScreen then
-            local distance = (Vector2.new(headPos.X, headPos.Y) - cameraCenter).Magnitude
+            local distance = (Vector2.new(headPos.X, headPos.Y) - mousePos).Magnitude
             if distance > shortestDistance then
-                closestPlayer = nil -- Lose target if it moves too far
+                closestPlayer = nil
             end
         else
-            closestPlayer = nil -- Lose target if not on screen
+            closestPlayer = nil
         end
     else
         closestPlayer = nil
     end
 
     -- Find new target if no valid current target
+    if not closestPlayer then
+        shortestDistance = DynamicFOVRadius
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local distance = (Vector2.new(headPos.X, headPos.Y) - mousePos).Magnitude
+                    if distance < shortestDistance then
+                        closestPlayer = player
+                        shortestDistance = distance
+                    end
+                end
+            end
+        end
+    end
+
+    CurrentTarget = closestPlayer
+    return closestPlayer
+end
+
+-- Mouse Aimbot Loop
+RunService.RenderStepped:Connect(function(deltaTime)
+    if MouseAimbotEnabled then
+        local target = GetClosestPlayerForMouse()
+        DynamicFOVRadius = FOVRadius
+        
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local head = target.Character.Head
+            local headPos = head.Position
+            
+            -- Predictive tracking
+            local velocity = head.Velocity
+            local prediction = headPos + velocity * 0.1
+            
+            local screenPos, onScreen = Camera:WorldToViewportPoint(prediction)
+            
+            if onScreen then
+                local mousePos = getMousePosition()
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                
+                -- Dynamic FOV increase if target is near edge
+                if distance > FOVRadius * 0.8 then
+                    DynamicFOVRadius = math.min(FOVRadius * MaxFOVIncrease, FOVRadius + distance)
+                end
+                
+                -- Only move mouse if target is within FOV
+                if distance <= DynamicFOVRadius then
+                    moveMouseTo(screenPos.X, screenPos.Y)
+                end
+            end
+        end
+    end
+end)
+
+-- Find Closest Target for camera aimbot (original)
+local function GetClosestPlayer()
+    local closestPlayer = CurrentTarget
+    local shortestDistance = DynamicFOVRadius * 1.5
+    local cameraCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
+        local head = closestPlayer.Character.Head
+        local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+        if onScreen then
+            local distance = (Vector2.new(headPos.X, headPos.Y) - cameraCenter).Magnitude
+            if distance > shortestDistance then
+                closestPlayer = nil
+            end
+        else
+            closestPlayer = nil
+        end
+    else
+        closestPlayer = nil
+    end
+
     if not closestPlayer then
         shortestDistance = DynamicFOVRadius
         for _, player in ipairs(Players:GetPlayers()) do
@@ -778,31 +1247,27 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
--- Aimbot Loop with Predictive Tracking and Dynamic FOV
+-- Camera Aimbot Loop (original)
 RunService.RenderStepped:Connect(function(deltaTime)
     if AimbotEnabled then
         local target = GetClosestPlayer()
-        DynamicFOVRadius = FOVRadius -- Reset dynamic FOV
+        DynamicFOVRadius = FOVRadius
         if target and target.Character and target.Character:FindFirstChild("Head") then
             local head = target.Character.Head
             local headPos = head.Position
-            -- Basic predictive tracking using velocity
             local velocity = head.Velocity
-            local prediction = headPos + velocity * 0.1 -- Predict 0.1 seconds ahead
+            local prediction = headPos + velocity * 0.1
             local targetCFrame = CFrame.new(Camera.CFrame.Position, prediction)
 
-            -- Dynamic smoothness based on distance and speed
             local headScreenPos, _ = Camera:WorldToViewportPoint(headPos)
             local distance = (Vector2.new(headScreenPos.X, headScreenPos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
             local speed = velocity.Magnitude
             local dynamicSmoothness = math.clamp(Smoothness * (1 + distance / FOVRadius + speed / 50), 0.05, 0.5)
 
-            -- Dynamic FOV increase if target is near edge
             if distance > FOVRadius * 0.8 then
                 DynamicFOVRadius = math.min(FOVRadius * MaxFOVIncrease, FOVRadius + distance)
             end
 
-            -- Smoothly interpolate camera rotation
             Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, dynamicSmoothness)
         end
     end
@@ -811,11 +1276,27 @@ end)
 ----------------------------------------------------
 -- Rayfield Controls
 ----------------------------------------------------
+-- Mouse Aimbot Toggle (New)
 AimbotTab:CreateToggle({
-    Name = "Enable Aimbot (PC)",
+    Name = "Enable Mouse Aimbot (PC)",
+    CurrentValue = false,
+    Callback = function(Value)
+        MouseAimbotEnabled = Value
+        if Value then
+            AimbotEnabled = false -- Turn off camera aimbot
+        end
+    end
+})
+
+-- Camera Aimbot Toggle (Renamed)
+AimbotTab:CreateToggle({
+    Name = "Enable Camera Aimbot (PC)",
     CurrentValue = false,
     Callback = function(Value)
         AimbotEnabled = Value
+        if Value then
+            MouseAimbotEnabled = false -- Turn off mouse aimbot
+        end
     end
 })
 
@@ -843,12 +1324,24 @@ AimbotTab:CreateSlider({
 
 AimbotTab:CreateSlider({
     Name = "Aimbot Smoothness",
-    Range = {0.05, 0.5},
+    Range = {0.05, 1},
     Increment = 0.01,
     Suffix = "factor",
     CurrentValue = 0.2,
     Callback = function(Value)
         Smoothness = Value
+    end
+})
+
+-- Mouse Sensitivity Slider (New)
+AimbotTab:CreateSlider({
+    Name = "Mouse Sensitivity",
+    Range = {0.1, 2},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = 1.0,
+    Callback = function(Value)
+        MouseSensitivity = Value
     end
 })
 
@@ -873,7 +1366,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 ----------------------------------------------------
---  Phone GUI System
+-- 📱 Phone GUI System
 ----------------------------------------------------
 local PhoneGui
 local PhoneToggleButton
@@ -906,7 +1399,7 @@ local function CreatePhoneGui()
 
     PhoneToggleButton.MouseButton1Click:Connect(function()
         AimbotEnabled = not AimbotEnabled
-        ShowFOV = AimbotEnabled -- Sync FOV with aimbot for phone GUI
+        ShowFOV = AimbotEnabled
         PhoneToggleButton.Text = AimbotEnabled and "ON" or "OFF"
         PhoneToggleButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
         CreateFOVCircle()
@@ -920,7 +1413,7 @@ local function RemovePhoneGui()
     end
 end
 
---  Toggle in Rayfield Menu
+-- 📱 Toggle in Rayfield Menu
 AimbotTab:CreateToggle({
     Name = "Phone Aimbot GUI",
     CurrentValue = false,
@@ -933,7 +1426,7 @@ AimbotTab:CreateToggle({
             RemovePhoneGui()
         end
     end
-}) 
+})
 
 -- TELEPORT TAB
 local TeleportTab = Window:CreateTab("| Teleport", 138281706845765)
@@ -1214,7 +1707,7 @@ local brakePower = 0.15
 ---------------------------------------------------------------------
 -- 🪂 Vehicle Tab
 ---------------------------------------------------------------------
-local vehicleTab = Window:CreateTab("Vehicle")
+local vehicleTab = Window:CreateTab("| Vehicle", 13773498965)
 
 vehicleTab:CreateToggle({
 	Name = "Flight Mode (move with WASD + QE)",
@@ -1343,10 +1836,674 @@ task.spawn(function()
 		end
 	end
 end)
+   
+
+    -- Camera Tab
+    local CameraTab = Window:CreateTab("| Camera", 16060788318)
+
+    -- Camera Variables
+    local freecamEnabled = false
+    local freecamKey = "F4"
+    local freecamSpeed = 50
+    local freecamConnection = nil
+    local freecamPosition = nil
+    local originalCameraCFrame = nil
+    local originalCameraSubject = nil
+    local originalWalkSpeed = 16
+    local rightClickHeld = false
+    local mouseLocked = false
+    local cameraRotationX = 0
+    local cameraRotationY = 0
+
+    -- Store camera state
+    local function storeCameraState()
+        originalCameraCFrame = Camera.CFrame
+        originalCameraSubject = Camera.CameraSubject
+        -- Store initial rotation angles
+        local lookVector = Camera.CFrame.LookVector
+        cameraRotationY = math.asin(lookVector.Y)
+        cameraRotationX = math.atan2(lookVector.X, lookVector.Z)
+    end
+
+    -- Restore camera state
+    local function restoreCameraState()
+        if originalCameraCFrame then
+            Camera.CFrame = originalCameraCFrame
+        end
+        if originalCameraSubject then
+            Camera.CameraSubject = originalCameraSubject
+        end
+    end
+
+    -- Lock character movement
+    local function lockCharacter()
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                originalWalkSpeed = humanoid.WalkSpeed
+                humanoid.WalkSpeed = 0
+                humanoid.JumpPower = 0
+            end
+            
+            -- Anchor the character
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.Anchored = true
+            end
+            
+            -- Disable controls
+            if humanoid then
+                humanoid.AutoRotate = false
+            end
+        end
+    end
+
+    -- Unlock character movement
+    local function unlockCharacter()
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = originalWalkSpeed
+                humanoid.JumpPower = 50
+                humanoid.AutoRotate = true
+            end
+            
+            -- Unanchor the character
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.Anchored = false
+            end
+        end
+    end
+
+    -- Start Freecam
+    local function startFreecam()
+        if freecamEnabled then return end
+        freecamEnabled = true
+        
+        -- Store current camera state
+        storeCameraState()
+        
+        -- Store current camera position
+        freecamPosition = Camera.CFrame
+        
+        -- Lock character
+        lockCharacter()
+        
+        -- Set camera to free mode
+        Camera.CameraType = Enum.CameraType.Scriptable
+        Camera.CameraSubject = nil
+        
+        Rayfield:Notify({
+            Title = "Freecam Enabled",
+            Content = "Right click to look around. Press " .. freecamKey .. " to disable",
+            Duration = 3,
+            Image = 16060788318
+        })
+    end
+
+    -- Stop Freecam
+    local function stopFreecam()
+        if not freecamEnabled then return end
+        freecamEnabled = false
+        
+        -- Save current position before restoring
+        freecamPosition = Camera.CFrame
+        
+        -- Restore camera
+        restoreCameraState()
+        Camera.CameraType = Enum.CameraType.Custom
+        
+        -- Unlock character
+        unlockCharacter()
+        
+        -- Release mouse if locked
+        if mouseLocked then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            mouseLocked = false
+        end
+        rightClickHeld = false
+        
+        Rayfield:Notify({
+            Title = "Freecam Disabled",
+            Content = "Camera restored to normal",
+            Duration = 2,
+            Image = 16060788318
+        })
+    end
+
+    -- Toggle Freecam
+    local function toggleFreecam()
+        if freecamEnabled then
+            stopFreecam()
+        else
+            startFreecam()
+        end
+    end
+
+    -- Handle right click for mouse look
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not freecamEnabled then return end
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            rightClickHeld = true
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+            mouseLocked = true
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input, gameProcessed)
+        if not freecamEnabled then return end
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            rightClickHeld = false
+            if mouseLocked then
+                UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                mouseLocked = false
+            end
+        end
+    end)
+
+    -- Freecam Movement
+    freecamConnection = RunService.RenderStepped:Connect(function()
+        if not freecamEnabled then return end
+        
+        -- Mouse Look when right click is held
+        if rightClickHeld then
+            local mouseDelta = UserInputService:GetMouseDelta()
+            local sensitivity = 0.2
+            
+            -- Update rotation angles (prevent tilting)
+            cameraRotationX = cameraRotationX - math.rad(mouseDelta.X * sensitivity)
+            cameraRotationY = math.clamp(cameraRotationY - math.rad(mouseDelta.Y * sensitivity), -math.rad(89), math.rad(89))
+            
+            -- Create rotation without tilt (keep camera upright)
+            local horizontalRotation = CFrame.Angles(0, cameraRotationX, 0)
+            local verticalRotation = CFrame.Angles(cameraRotationY, 0, 0)
+            
+            -- Apply rotation to camera position
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position) * horizontalRotation * verticalRotation
+            
+            -- Update freecam position
+            freecamPosition = Camera.CFrame
+        end
+        
+        local moveVector = Vector3.new(0, 0, 0)
+        local speed = freecamSpeed * 0.1
+        
+        -- WASD Movement (relative to camera direction, but horizontal only)
+        local cameraForward = Camera.CFrame.LookVector
+        local cameraRight = Camera.CFrame.RightVector
+        
+        -- Keep movement horizontal (no flying up/down with WASD)
+        local forward = Vector3.new(cameraForward.X, 0, cameraForward.Z).Unit
+        local right = Vector3.new(cameraRight.X, 0, cameraRight.Z).Unit
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveVector += forward
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveVector -= forward
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveVector -= right
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveVector += right
+        end
+        
+        -- Up/Down Movement (always vertical)
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveVector += Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            moveVector -= Vector3.new(0, 1, 0)
+        end
+        
+        -- Speed boost with LeftControl
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            speed = speed * 3
+        end
+        
+        -- Apply movement
+        if moveVector.Magnitude > 0 then
+            moveVector = moveVector.Unit
+            Camera.CFrame = Camera.CFrame + (moveVector * speed)
+            -- Update freecam position
+            freecamPosition = Camera.CFrame
+        end
+    end)
+
+    -- Teleport to Freecam
+    local function teleportToFreecam()
+        if not freecamPosition then
+            Rayfield:Notify({
+                Title = "No Camera Position",
+                Content = "Enable freecam first to set a camera position",
+                Duration = 3,
+                Image = 16060788318
+            })
+            return
+        end
+        
+        -- Store target position
+        local targetPos = freecamPosition.Position
+        
+        -- Stop freecam if active
+        if freecamEnabled then
+            stopFreecam()
+        end
+        
+        -- Wait a frame for character to unlock
+        task.wait()
+        
+        -- Teleport character
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            Rayfield:Notify({
+                Title = "Teleport Failed",
+                Content = "Character not found! Waiting for respawn...",
+                Duration = 3,
+                Image = 16060788318
+            })
+            
+            -- Wait for character to respawn
+            local newCharacter = LocalPlayer.CharacterAdded:Wait()
+            task.wait(0.5)
+            if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
+                newCharacter.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
+            end
+            return
+        end
+        
+        -- Teleport to saved position
+        character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
+        
+        Rayfield:Notify({
+            Title = "Teleported!",
+            Content = "Teleported to freecam position",
+            Duration = 2,
+            Image = 16060788318
+        })
+    end
+
+    -- Keybind for Freecam toggle
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        if input.KeyCode == Enum.KeyCode[freecamKey] then
+            toggleFreecam()
+        end
+    end)
+
+    -- Freecam Toggle
+    CameraTab:CreateToggle({
+        Name = "Enable Freecam",
+        CurrentValue = false,
+        Callback = function(state)
+            if state then
+                startFreecam()
+            else
+                stopFreecam()
+            end
+        end
+    })
+
+    -- Freecam Speed Slider
+    CameraTab:CreateSlider({
+        Name = "Freecam Speed",
+        Range = {10, 500},
+        Increment = 10,
+        Suffix = " studs/s",
+        CurrentValue = 50,
+        Callback = function(value)
+            freecamSpeed = value
+        end
+    })
+
+    -- Freecam Keybind Input
+    CameraTab:CreateInput({
+        Name = "Freecam Toggle Key",
+        PlaceholderText = "Default: F4",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(text)
+            if text and #text > 0 then
+                freecamKey = text:upper()
+                Rayfield:Notify({
+                    Title = "Freecam Key Set",
+                    Content = "Press " .. freecamKey .. " to toggle freecam",
+                    Duration = 2,
+                    Image = 4483362458
+                })
+            end
+        end
+    })
+
+    -- Teleport to Freecam Button
+    CameraTab:CreateButton({
+        Name = "Teleport to Freecam",
+        Callback = function()
+            teleportToFreecam()
+        end
+    })
+
+    -- Instructions
+    CameraTab:CreateParagraph({
+        Title = "Freecam Controls",
+        Content = [[
+
+WASD - Move camera (horizontal)
+Space - Move up
+Left Shift - Move down
+Left Ctrl - Speed boost (3x)
+Hold Right Click - Look around
+]] .. freecamKey .. [[ - Toggle freecam
+        ]]
+    })
 
     -- Settings Tab
     local SettingsTab = Window:CreateTab("| Settings", 6034509993)
 
+    -- ArrayList Variables
+    local ArrayListEnabled = false
+    local ArrayListPosition = "Right Top"
+    local ArrayListColor = "White"
+    local ArrayListRainbow = false
+    local ArrayListGui = nil
+    local ArrayListFrame = nil
+    local ArrayListUpdateConnection = nil
+    local ArrayListLabels = {}
+    local ArrayListAnimations = {}
+    
+    -- ArrayList Colors
+    local ArrayListColors = {
+        ["White"] = Color3.fromRGB(255, 255, 255),
+        ["Red"] = Color3.fromRGB(255, 0, 0),
+        ["Blue"] = Color3.fromRGB(0, 100, 255),
+        ["Green"] = Color3.fromRGB(0, 255, 0),
+        ["Yellow"] = Color3.fromRGB(255, 255, 0),
+        ["Purple"] = Color3.fromRGB(150, 0, 255),
+        ["Orange"] = Color3.fromRGB(255, 150, 0),
+        ["Pink"] = Color3.fromRGB(255, 0, 150),
+        ["Cyan"] = Color3.fromRGB(0, 255, 255),
+        ["Rainbow"] = Color3.fromRGB(255, 255, 255)
+    }
+    
+    -- Function to get rainbow color
+    local function getRainbowColor()
+        local time = tick() * 3
+        local r = (math.sin(time) + 1) / 2
+        local g = (math.sin(time + 2 * math.pi / 3) + 1) / 2
+        local b = (math.sin(time + 4 * math.pi / 3) + 1) / 2
+        return Color3.fromRGB(r * 255, g * 255, b * 255)
+    end
+
+    -- Function to animate label appearing
+    local function animateLabelIn(label)
+        label.BackgroundTransparency = 1
+        label.TextTransparency = 1
+        
+        local startTime = tick()
+        local animConnection
+        animConnection = RunService.RenderStepped:Connect(function()
+            local elapsed = tick() - startTime
+            local duration = 0.3
+            
+            if elapsed >= duration then
+                label.TextTransparency = 0
+                animConnection:Disconnect()
+                return
+            end
+            
+            local alpha = elapsed / duration
+            -- Smooth easing
+            alpha = alpha * alpha * (3 - 2 * alpha)
+            
+            label.TextTransparency = 1 - alpha
+        end)
+        table.insert(ArrayListAnimations, animConnection)
+    end
+
+    -- Function to animate label color change
+    local function pulseLabel(label)
+        task.spawn(function()
+            local originalSize = label.TextSize
+            local startTime = tick()
+            local duration = 0.2
+            
+            while label and label.Parent and tick() - startTime < duration do
+                local elapsed = tick() - startTime
+                local alpha = elapsed / duration
+                local size = originalSize + (2 * math.sin(alpha * math.pi))
+                label.TextSize = math.floor(size)
+                task.wait()
+            end
+            
+            if label and label.Parent then
+                label.TextSize = originalSize
+            end
+        end)
+    end
+
+    -- Function to check which cheats are enabled
+    local function getEnabledCheats()
+        local cheats = {}
+        
+        if flying then table.insert(cheats, "Fly") end
+        if noclipEnabled then table.insert(cheats, "Noclip") end
+        if ESPEnabled then table.insert(cheats, "ESP") end
+        if TracersEnabled then table.insert(cheats, "Tracers") end
+        if ChamsEnabled then table.insert(cheats, "Chams") end
+        if NoFallEnabled then table.insert(cheats, "NoFall") end
+        if InfiniteJumpEnabled then table.insert(cheats, "InfJump") end
+        if AntiAFKEnabled then table.insert(cheats, "AntiAFK") end
+        if AimbotEnabled then table.insert(cheats, "CamAimbot") end
+        if MouseAimbotEnabled then table.insert(cheats, "MouseAimbot") end
+        if TriggerbotEnabled then table.insert(cheats, "Triggerbot") end
+        if invisEnabled then table.insert(cheats, "Invis") end
+        if freecamEnabled then table.insert(cheats, "Freecam") end
+        if clickTeleportEnabled then table.insert(cheats, "ClickTP") end
+        if touchTeleportEnabled then table.insert(cheats, "TouchTP") end
+        if flightEnabled then table.insert(cheats, "VehicleFly") end
+        if PredictionEnabled then table.insert(cheats, "Predict") end
+        if ShowFOV then table.insert(cheats, "FOV") end
+        
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            local hum = player.Character.Humanoid
+            if hum.WalkSpeed > 16 then
+                table.insert(cheats, "Speed:" .. tostring(hum.WalkSpeed))
+            end
+            if hum.JumpPower > 50 then
+                table.insert(cheats, "Jump:" .. tostring(hum.JumpPower))
+            end
+        end
+        
+        table.sort(cheats, function(a, b) return a:lower() < b:lower() end)
+        return cheats
+    end
+
+    -- Function to create ArrayList
+    local function createArrayList()
+        -- Clean up existing
+        if ArrayListGui then
+            ArrayListGui:Destroy()
+            ArrayListGui = nil
+        end
+        ArrayListLabels = {}
+        
+        -- Clear animations
+        for _, conn in pairs(ArrayListAnimations) do
+            conn:Disconnect()
+        end
+        ArrayListAnimations = {}
+        
+        local player = game.Players.LocalPlayer
+        if not player then return end
+        
+        ArrayListGui = Instance.new("ScreenGui")
+        ArrayListGui.Name = "SilentArrayList"
+        ArrayListGui.ResetOnSpawn = false
+        ArrayListGui.DisplayOrder = 999
+        ArrayListGui.IgnoreGuiInset = true
+        ArrayListGui.Parent = player:WaitForChild("PlayerGui")
+        
+        -- Create container frame
+        ArrayListFrame = Instance.new("Frame")
+        ArrayListFrame.Name = "Container"
+        ArrayListFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        ArrayListFrame.BackgroundTransparency = 0.75
+        ArrayListFrame.BorderSizePixel = 0
+        ArrayListFrame.Size = UDim2.new(0, 200, 0, 0)
+        ArrayListFrame.Parent = ArrayListGui
+        
+        -- Add corner rounding
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = ArrayListFrame
+        
+        -- Add padding
+        local padding = Instance.new("UIPadding")
+        padding.PaddingLeft = UDim.new(0, 12)
+        padding.PaddingRight = UDim.new(0, 12)
+        padding.PaddingTop = UDim.new(0, 10)
+        padding.PaddingBottom = UDim.new(0, 10)
+        padding.Parent = ArrayListFrame
+        
+        -- Create list layout - goes from bottom to top for better display
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 4)
+        layout.SortOrder = Enum.SortOrder.Name
+        layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.Parent = ArrayListFrame
+        
+        -- Set position based on selection
+        if ArrayListPosition == "Right Top" then
+            ArrayListFrame.AnchorPoint = Vector2.new(1, 0)
+            ArrayListFrame.Position = UDim2.new(1, -10, 0, 10)
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
+        elseif ArrayListPosition == "Right Bottom" then
+            ArrayListFrame.AnchorPoint = Vector2.new(1, 1)
+            ArrayListFrame.Position = UDim2.new(1, -10, 1, -10)
+            layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        elseif ArrayListPosition == "Left Top" then
+            ArrayListFrame.AnchorPoint = Vector2.new(0, 0)
+            ArrayListFrame.Position = UDim2.new(0, 10, 0, 10)
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
+        elseif ArrayListPosition == "Left Bottom" then
+            ArrayListFrame.AnchorPoint = Vector2.new(0, 1)
+            ArrayListFrame.Position = UDim2.new(0, 10, 1, -10)
+            layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        end
+        
+        -- Start update connection
+        local lastCheats = {}
+        ArrayListUpdateConnection = RunService.RenderStepped:Connect(function()
+            local currentCheats = getEnabledCheats()
+            
+            -- Check if cheats changed
+            local changed = false
+            if #currentCheats ~= #lastCheats then
+                changed = true
+            else
+                for i = 1, #currentCheats do
+                    if currentCheats[i] ~= lastCheats[i] then
+                        changed = true
+                        break
+                    end
+                end
+            end
+            
+            if changed then
+                lastCheats = currentCheats
+                
+                -- Clear animations
+                for _, conn in pairs(ArrayListAnimations) do
+                    conn:Disconnect()
+                end
+                ArrayListAnimations = {}
+                
+                -- Remove old cheat labels
+                for _, child in pairs(ArrayListFrame:GetChildren()) do
+                    if child:IsA("TextLabel") then
+                        child:Destroy()
+                    end
+                end
+                ArrayListLabels = {}
+                
+                -- Create new cheat labels with animation
+                for i, cheat in ipairs(currentCheats) do
+                    local label = Instance.new("TextLabel")
+                    label.Name = "Cheat_" .. i
+                    label.BackgroundTransparency = 1
+                    label.Size = UDim2.new(1, 0, 0, 24)
+                    label.Text = cheat
+                    label.TextSize = 32
+                    label.Font = Enum.Font.SourceSansBold
+                    label.TextStrokeTransparency = 0.6
+                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    label.Parent = ArrayListFrame
+                    
+                    -- Set text alignment based on position
+                    if ArrayListPosition == "Right Top" or ArrayListPosition == "Right Bottom" then
+                        label.TextXAlignment = Enum.TextXAlignment.Right
+                    else
+                        label.TextXAlignment = Enum.TextXAlignment.Left
+                    end
+                    
+                    if ArrayListRainbow then
+                        label.TextColor3 = getRainbowColor()
+                    else
+                        label.TextColor3 = ArrayListColors[ArrayListColor] or Color3.fromRGB(255, 255, 255)
+                    end
+                    
+                    -- Animate label appearing with slight delay
+                    local delay = i * 0.05
+                    task.delay(delay, function()
+                        if label and label.Parent then
+                            animateLabelIn(label)
+                        end
+                    end)
+                    
+                    table.insert(ArrayListLabels, label)
+                end
+            end
+            
+            -- Update rainbow colors
+            if ArrayListRainbow then
+                local rainbowColor = getRainbowColor()
+                for _, label in pairs(ArrayListLabels) do
+                    if label and label.Parent then
+                        label.TextColor3 = rainbowColor
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Function to destroy ArrayList
+    local function destroyArrayList()
+        if ArrayListUpdateConnection then
+            ArrayListUpdateConnection:Disconnect()
+            ArrayListUpdateConnection = nil
+        end
+        
+        for _, conn in pairs(ArrayListAnimations) do
+            conn:Disconnect()
+        end
+        ArrayListAnimations = {}
+        
+        if ArrayListGui then
+            ArrayListGui:Destroy()
+            ArrayListGui = nil
+        end
+        ArrayListLabels = {}
+    end
+
+    -- Theme Dropdown
     local themeNames = {}
     for name, _ in pairs(Themes) do table.insert(themeNames, name) end
 
@@ -1359,6 +2516,63 @@ end)
             local o = option
             if type(o) == "table" then o = o[1] end
             if type(o) == "string" then SelectedTheme = o end
+        end
+    })
+
+    -- ArrayList Toggle
+    SettingsTab:CreateToggle({
+        Name = "Enable ArrayList",
+        CurrentValue = false,
+        Callback = function(state)
+            ArrayListEnabled = state
+            if state then
+                createArrayList()
+            else
+                destroyArrayList()
+            end
+        end
+    })
+
+    -- ArrayList Position Dropdown
+    local positionNames = {"Right Top", "Right Bottom", "Left Top", "Left Bottom"}
+
+    SettingsTab:CreateDropdown({
+        Name = "ArrayList Position",
+        Options = positionNames,
+        CurrentOption = {"Right Top"},
+        MultipleOptions = false,
+        Callback = function(option)
+            local pos = option
+            if type(option) == "table" then pos = option[1] end
+            if type(pos) == "string" then
+                ArrayListPosition = pos
+                if ArrayListEnabled then
+                    createArrayList()
+                end
+            end
+        end
+    })
+
+    -- ArrayList Color Dropdown
+    local colorNames = {"White", "Red", "Blue", "Green", "Yellow", "Purple", "Orange", "Pink", "Cyan", "Rainbow"}
+
+    SettingsTab:CreateDropdown({
+        Name = "ArrayList Color",
+        Options = colorNames,
+        CurrentOption = {"White"},
+        MultipleOptions = false,
+        Callback = function(option)
+            local col = option
+            if type(option) == "table" then col = option[1] end
+            if type(col) == "string" then
+                if col == "Rainbow" then
+                    ArrayListRainbow = true
+                    ArrayListColor = "White"
+                else
+                    ArrayListRainbow = false
+                    ArrayListColor = col
+                end
+            end
         end
     })
 
@@ -1404,17 +2618,13 @@ end)
         end
 
         FlySpeed = 2
-
         ESPColor = Color3.new(1, 0, 0)
-
         FOVRadius = 100
         DynamicFOVRadius = 100
         Smoothness = 0.2
-
         customTeleportPosition = nil
         customSpawnPosition = nil
         selectedPlayerName = nil
-
         flightSpeed = 1
         accelPower = 0.025
         brakePower = 0.15
@@ -1444,21 +2654,20 @@ end)
 
         RemovePhoneGui()
     
-
         for _, conn in pairs(ESPConnections) do
             if typeof(conn) == "RBXScriptConnection" then
                 conn:Disconnect()
             end
         end
         ESPConnections = {}
+        
+        destroyArrayList()
     end
-
 
     SettingsTab:CreateButton({
         Name = "Apply Theme (Resets all Cheats!)",
         Callback = function()
             local themeToApply = Themes[SelectedTheme] or "Default"
-
             ResetAllSettings()
         
             task.defer(function()

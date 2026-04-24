@@ -1,3 +1,10 @@
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
 local Themes = {
     ["Default"] = "Default",
     ["Amber Glow"] = "AmberGlow",
@@ -986,6 +993,12 @@ local Smoothness = 0.2
 local CurrentTarget = nil
 local MaxFOVIncrease = 1.5
 local MouseSensitivity = 1.0
+local TriggerbotCrosshairEnabled = false
+local TriggerbotMouseEnabled = false
+local TriggerbotCrosshairPressed = false
+local TriggerbotMousePressed = false
+local PredictionEnabled = false
+local PredictionAmount = 0.1
 
 local AimbotTab = Window:CreateTab("| Aimbot", 10769687353)
 
@@ -1025,6 +1038,99 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Your existing variables (add these if missing)
+local TriggerbotCrosshairLastShot = 0
+local TriggerbotMouseLastShot = 0
+local TriggerbotCPS = 12  -- slightly higher feels snappier but still controllable
+local TriggerbotClickInterval = 1 / TriggerbotCPS
+
+-- ================== BETTER TRIGGERBOT (Combined + Visibility Check) ==================
+local function isValidTarget(char)
+    if not char or char == LocalPlayer.Character then return false end
+    if not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return false end
+    -- Add team check here if you want: if LocalPlayer.Team == char:FindFirstChild("Team")?.Value then return false end
+    return true
+end
+
+RunService.RenderStepped:Connect(function()
+    local currentTime = tick()
+    if currentTime - math.max(TriggerbotCrosshairLastShot, TriggerbotMouseLastShot) < TriggerbotClickInterval then
+        return
+    end
+
+    local shouldShoot = false
+
+    -- Crosshair Triggerbot (more reliable than old version)
+    if TriggerbotCrosshairEnabled then
+        local viewportCenter = Camera.ViewportSize / 2
+        local ray = Camera:ViewportPointToRay(viewportCenter.X, viewportCenter.Y)
+
+        local params = RaycastParams.new()
+        params.FilterDescendantsInstances = {LocalPlayer.Character or {}}
+        params.FilterType = Enum.RaycastFilterType.Exclude
+
+        local result = Workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+        if result and result.Instance then
+            local model = result.Instance:FindFirstAncestorWhichIsA("Model") or result.Instance.Parent
+            if isValidTarget(model) then
+                -- Optional small screen check
+                local _, onScreen = Camera:WorldToViewportPoint(result.Position)
+                if onScreen then
+                    shouldShoot = true
+                end
+            end
+        end
+    end
+
+    -- Mouse Triggerbot (fallback)
+    if TriggerbotMouseEnabled and not shouldShoot then
+        local mouse = LocalPlayer:GetMouse()
+        if mouse.Target then
+            local model = mouse.Target:FindFirstAncestorWhichIsA("Model") or mouse.Target.Parent
+            if isValidTarget(model) then
+                shouldShoot = true
+            end
+        end
+    end
+
+    if shouldShoot then
+        local now = tick()
+        TriggerbotCrosshairLastShot = now
+        TriggerbotMouseLastShot = now
+
+        -- More reliable clicking (many executors prefer VirtualInputManager)
+        local vim = game:GetService("VirtualInputManager")
+        vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)   -- press
+        task.wait(0.001)  -- tiny delay
+        vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)  -- release
+        -- Fallback if VirtualInputManager doesn't work in your executor:
+        -- mouse1press()
+        -- mouse1release()
+    end
+end)
+
+
+    -- Prediction Toggle
+AimbotTab:CreateToggle({
+    Name = "Enable Prediction",
+    CurrentValue = false,
+    Callback = function(Value)
+        PredictionEnabled = Value
+    end
+})
+
+-- Prediction Amount Slider
+AimbotTab:CreateSlider({
+    Name = "Prediction Amount",
+    Range = {0.01, 0.5},
+    Increment = 0.01,
+    Suffix = "s",
+    CurrentValue = 0.1,
+    Callback = function(Value)
+        PredictionAmount = Value
+    end
+})
+
 local function getMousePosition()
     return UserInputService:GetMouseLocation()
 end
@@ -1048,9 +1154,15 @@ local function GetClosestPlayerForMouse()
 
     if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
         local head = closestPlayer.Character.Head
-        local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+        local headPos = head.Position
+        
+        if PredictionEnabled then
+            headPos = head.Position + head.Velocity * PredictionAmount
+        end
+        
+        local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
         if onScreen then
-            local distance = (Vector2.new(headPos.X, headPos.Y) - mousePos).Magnitude
+            local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
             if distance > shortestDistance then
                 closestPlayer = nil
             end
@@ -1066,9 +1178,15 @@ local function GetClosestPlayerForMouse()
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
                 local head = player.Character.Head
-                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                local headPos = head.Position
+                
+                if PredictionEnabled then
+                    headPos = head.Position + head.Velocity * PredictionAmount
+                end
+                
+                local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
                 if onScreen then
-                    local distance = (Vector2.new(headPos.X, headPos.Y) - mousePos).Magnitude
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
                     if distance < shortestDistance then
                         closestPlayer = player
                         shortestDistance = distance
@@ -1092,7 +1210,10 @@ RunService.RenderStepped:Connect(function(deltaTime)
             local headPos = head.Position
             
             local velocity = head.Velocity
-            local prediction = headPos + velocity * 0.1
+            local prediction = headPos
+            if PredictionEnabled then
+                prediction = headPos + velocity * PredictionAmount
+            end
             
             local screenPos, onScreen = Camera:WorldToViewportPoint(prediction)
             
@@ -1119,9 +1240,15 @@ local function GetClosestPlayer()
 
     if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
         local head = closestPlayer.Character.Head
-        local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+        local headPos = head.Position
+        
+        if PredictionEnabled then
+            headPos = head.Position + head.Velocity * PredictionAmount
+        end
+        
+        local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
         if onScreen then
-            local distance = (Vector2.new(headPos.X, headPos.Y) - cameraCenter).Magnitude
+            local distance = (Vector2.new(screenPos.X, screenPos.Y) - cameraCenter).Magnitude
             if distance > shortestDistance then
                 closestPlayer = nil
             end
@@ -1137,9 +1264,15 @@ local function GetClosestPlayer()
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
                 local head = player.Character.Head
-                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                local headPos = head.Position
+                
+                if PredictionEnabled then
+                    headPos = head.Position + head.Velocity * PredictionAmount
+                end
+                
+                local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
                 if onScreen then
-                    local distance = (Vector2.new(headPos.X, headPos.Y) - cameraCenter).Magnitude
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - cameraCenter).Magnitude
                     if distance < shortestDistance then
                         closestPlayer = player
                         shortestDistance = distance
@@ -1161,7 +1294,10 @@ RunService.RenderStepped:Connect(function(deltaTime)
             local head = target.Character.Head
             local headPos = head.Position
             local velocity = head.Velocity
-            local prediction = headPos + velocity * 0.1
+            local prediction = headPos
+            if PredictionEnabled then
+                prediction = headPos + velocity * PredictionAmount
+            end
             local targetCFrame = CFrame.new(Camera.CFrame.Position, prediction)
 
             local headScreenPos, _ = Camera:WorldToViewportPoint(headPos)
@@ -1196,6 +1332,32 @@ AimbotTab:CreateToggle({
         AimbotEnabled = Value
         if Value then
             MouseAimbotEnabled = false
+        end
+    end
+})
+
+-- Crosshair Triggerbot Toggle
+AimbotTab:CreateToggle({
+    Name = "Triggerbot (Crosshair)",
+    CurrentValue = false,
+    Callback = function(Value)
+        TriggerbotCrosshairEnabled = Value
+        if not Value and TriggerbotCrosshairPressed then
+            TriggerbotCrosshairPressed = false
+            mouse1release()
+        end
+    end
+})
+
+-- Mouse Triggerbot Toggle
+AimbotTab:CreateToggle({
+    Name = "Triggerbot (Mouse)",
+    CurrentValue = false,
+    Callback = function(Value)
+        TriggerbotMouseEnabled = Value
+        if not Value and TriggerbotMousePressed then
+            TriggerbotMousePressed = false
+            mouse1release()
         end
     end
 })

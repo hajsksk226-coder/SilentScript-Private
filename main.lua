@@ -1,4 +1,3 @@
--- Definition der Themes
 local Themes = {
     ["Default"] = "Default",
     ["Amber Glow"] = "AmberGlow",
@@ -11,10 +10,9 @@ local Themes = {
     ["Serenity"] = "Serenity"
 }
 
-local SelectedTheme = "Default"
+local SelectedTheme = "Amethyst"
 
 local function CreateWindow(theme)
-    -- Laden der Rayfield-Bibliothek
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     if Rayfield == nil then
         error("Rayfield did not load!")
@@ -27,7 +25,7 @@ local function CreateWindow(theme)
         LoadingTitle = "Loading...",
         LoadingSubtitle = "by Pingz0 | Idea´s by Pyrotec_7",
         ShowText = "Silent Script",
-        Theme = theme or "Default",
+        Theme = theme or "Amethyst",
         ToggleUIKeybind = "K",
         DisableRayfieldPrompts = true,
         DisableBuildWarnings = true,
@@ -37,7 +35,6 @@ local function CreateWindow(theme)
 
     local MainTab = Window:CreateTab("| Main", 8772194322)
 
-    -- Speed Slider
     MainTab:CreateSlider({
         Name = "Speed Hack",
         Range = {16, 250},
@@ -49,7 +46,6 @@ local function CreateWindow(theme)
         end,
     })
 
-    -- Jump Power Slider
     MainTab:CreateSlider({
         Name = "Jump Hack",
         Range = {50, 250},
@@ -85,7 +81,6 @@ local function CreateWindow(theme)
     local BodyVelocity
     local BodyGyro
 
-    -- Funktion zum Starten
     local function startFly()
         if flying then return end
         flying = true
@@ -100,7 +95,6 @@ local function CreateWindow(theme)
         BodyGyro.Parent = rootPart
     end
 
-    -- Funktion zum Stoppen
     local function stopFly()
         if not flying then return end
         flying = false
@@ -108,7 +102,6 @@ local function CreateWindow(theme)
         if BodyGyro then BodyGyro:Destroy() BodyGyro = nil end
     end
 
-    -- Bewegung updaten
     local function updateFly()
         if not flying then return end
         local moveDir = Vector3.new()
@@ -123,7 +116,6 @@ local function CreateWindow(theme)
         BodyGyro.CFrame = CFrame.new(rootPart.Position, rootPart.Position + cam.CFrame.LookVector)
     end
 
-    -- Button in deinem GUI
     MainTab:CreateButton({
         Name = "Toggle Fly",
         Callback = function()
@@ -135,26 +127,23 @@ local function CreateWindow(theme)
         end,
     })
 
-    -- Fly beim Herzschlag updaten
     runService.Heartbeat:Connect(function()
         if flying then
             updateFly()
         end
     end)
 
-    -- Charakter nach Respawn aktualisieren
     player.CharacterAdded:Connect(function(char)
         character = char
         rootPart = char:WaitForChild("HumanoidRootPart")
 
-        -- Fly-System automatisch neu initialisieren
         if flying then
             stopFly()
         end
 
         task.wait(0.1)
         startFly()
-        stopFly() -- sofort wieder ausmachen -> Toggle funktioniert normal
+        stopFly()
     end)
 
 local Players = game:GetService("Players")
@@ -229,7 +218,6 @@ local NoclipToggle = MainTab:CreateToggle({
     end,
 })
 
-    -- ESP System
     local ESPDrawings = {}
     local ESPConnections = {}
     local ESPTracers = {}
@@ -242,7 +230,6 @@ local NoclipToggle = MainTab:CreateToggle({
     local Camera = workspace.CurrentCamera
     local RunService = game:GetService("RunService")
 
-    -- ESP Colors
     local ESPColors = {
         ["Red"] = Color3.new(1, 0, 0),
         ["Blue"] = Color3.new(0, 0, 1),
@@ -258,8 +245,6 @@ local NoclipToggle = MainTab:CreateToggle({
     }
     
     local ESPColor = ESPColors["Red"]
-
-    -- Function to clean up tracers specifically
     local function clearAllTracers()
         for _, tracerData in pairs(ESPTracers) do
             if tracerData.connection then
@@ -272,7 +257,6 @@ local NoclipToggle = MainTab:CreateToggle({
         ESPTracers = {}
     end
 
-    -- Function to highlight character with perfect outline
     local function createPerfectOutline(character, color)
         local drawings = {}
         
@@ -289,7 +273,6 @@ local NoclipToggle = MainTab:CreateToggle({
         return drawings
     end
 
-    -- Function to create transparent/chams effect
     local function createChamsEffect(character, color)
         local drawings = {}
         
@@ -306,7 +289,6 @@ local NoclipToggle = MainTab:CreateToggle({
         return drawings
     end
 
-    -- Function to create clean tracers
     local function createTracers(player, color)
         local tracerData = {}
         
@@ -363,7 +345,6 @@ local NoclipToggle = MainTab:CreateToggle({
         return tracerData
     end
 
-    -- Function to create nametag
     local function createNametag(player, color)
         local drawings = {}
         local character = player.Character
@@ -395,11 +376,9 @@ local NoclipToggle = MainTab:CreateToggle({
         return drawings
     end
 
-    -- Function to completely wipe all ESP elements
     local function clearAllESP()
         clearAllTracers()
-        
-        -- Stop refresh connection
+
         if ESPRefreshConnection then
             ESPRefreshConnection:Disconnect()
             ESPRefreshConnection = nil
@@ -431,7 +410,7 @@ local NoclipToggle = MainTab:CreateToggle({
         end
         ESPDrawings = {}
         
-        -- Force clean any remaining ESP objects
+
         for _, player in pairs(Players:GetPlayers()) do
             if player and player.Character then
                 for _, obj in pairs(player.Character:GetDescendants()) do
@@ -445,7 +424,7 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     end
 
-    -- Function to update tracer colors
+
     local function updateTracerColors(color)
         for _, tracerData in pairs(ESPTracers) do
             if tracerData.drawing then
@@ -454,11 +433,9 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     end
 
-    -- Function to create ESP for a single player
     local function createESP(player)
         if player == LocalPlayer then return end
         
-        -- Clean up existing ESP for this player first
         if ESPDrawings[player] then
             for _, obj in pairs(ESPDrawings[player]) do
                 if obj then
@@ -473,7 +450,6 @@ local NoclipToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Clean up existing tracers for this player
         if ESPTracers[player] then
             if ESPTracers[player].connection then
                 pcall(function() ESPTracers[player].connection:Disconnect() end)
@@ -490,8 +466,6 @@ local NoclipToggle = MainTab:CreateToggle({
         local function updateESP()
             local character = player.Character
             if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-
-            -- Clean up old ESP elements on character first
             for _, obj in pairs(character:GetDescendants()) do
                 if obj.Name == "ESPPerfectOutline" or 
                    obj.Name == "ESPChams" or 
@@ -519,7 +493,6 @@ local NoclipToggle = MainTab:CreateToggle({
                 table.insert(drawings, drawing)
             end
             
-            -- Only create tracers if enabled
             if TracersEnabled and not ESPTracers[player] then
                 createTracers(player, displayColor)
             end
@@ -527,7 +500,6 @@ local NoclipToggle = MainTab:CreateToggle({
 
         updateESP()
 
-        -- Handle respawn
         local respawnConnection = player.CharacterAdded:Connect(function(char)
             task.wait(0.5)
             updateESP()
@@ -535,7 +507,6 @@ local NoclipToggle = MainTab:CreateToggle({
         table.insert(ESPConnections, respawnConnection)
     end
 
-    -- Function to refresh ESP for all players
     local function refreshAllESP()
         if not ESPEnabled then return end
         clearAllESP()
@@ -545,22 +516,18 @@ local NoclipToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Start auto-refresh if not already running
         if not ESPRefreshConnection then
             ESPRefreshConnection = RunService.Heartbeat:Connect(function()
-                -- This will run every frame, we'll use a time check for 1 second intervals
             end)
         end
     end
     
-    -- Auto-refresh every 1 second
     local lastRefresh = 0
     RunService.Heartbeat:Connect(function()
         if ESPEnabled then
             local currentTime = tick()
             if currentTime - lastRefresh >= 1 then
                 lastRefresh = currentTime
-                -- Re-apply ESP to all players
                 for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character then
                         createESP(player)
@@ -570,10 +537,8 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     end)
 
-    -- ESP Tab
     local ESPTab = Window:CreateTab("| ESP", 6523858394)
 
-    -- ESP Toggle
     ESPTab:CreateToggle({
         Name = "Enable ESP",
         CurrentValue = false,
@@ -581,12 +546,10 @@ local NoclipToggle = MainTab:CreateToggle({
             ESPEnabled = state
             if state then
                 refreshAllESP()
-                lastRefresh = 0 -- Reset refresh timer
-                
-                -- Handle new players joining
+                lastRefresh = 0
+            
                 local playerAddedConnection = Players.PlayerAdded:Connect(function(player)
                     if ESPEnabled then
-                        -- Wait for character to load then create ESP
                         local function setupNewPlayer()
                             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                 createESP(player)
@@ -601,7 +564,6 @@ local NoclipToggle = MainTab:CreateToggle({
                 end)
                 table.insert(ESPConnections, playerAddedConnection)
                 
-                -- Handle players leaving
                 local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
                     if ESPDrawings[player] then
                         for _, obj in pairs(ESPDrawings[player]) do
@@ -635,7 +597,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
-    -- Chams Toggle
     ESPTab:CreateToggle({
         Name = "Chams (See Through Walls)",
         CurrentValue = false,
@@ -647,7 +608,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
-    -- Tracers Toggle
     ESPTab:CreateToggle({
         Name = "Enable Tracers",
         CurrentValue = false,
@@ -662,7 +622,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
-    -- Color Dropdown
     local colorNames = {}
     for name, _ in pairs(ESPColors) do
         table.insert(colorNames, name)
@@ -688,7 +647,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
-    -- Clear ESP Button
     ESPTab:CreateButton({
         Name = "Clear All ESP",
         Callback = function()
@@ -699,7 +657,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
-    -- Force Clear Button
     ESPTab:CreateButton({
         Name = "Force Clear ESP",
         Callback = function()
@@ -726,7 +683,6 @@ local NoclipToggle = MainTab:CreateToggle({
         Callback = function(state)
             NoFallEnabled = state
 
-            -- Alles bereinigen bei Deaktivierung
             for _, conn in pairs(NoFallConnections) do
                 if typeof(conn) == "RBXScriptConnection" then
                     conn:Disconnect()
@@ -736,7 +692,6 @@ local NoclipToggle = MainTab:CreateToggle({
 
             if not state then return end
 
-            -- Fallgeschwindigkeit begrenzen
             table.insert(NoFallConnections, game:GetService("RunService").Stepped:Connect(function()
                 local char = game.Players.LocalPlayer.Character
                 if char and char:FindFirstChild("HumanoidRootPart") then
@@ -747,7 +702,6 @@ local NoclipToggle = MainTab:CreateToggle({
                 end
             end))
 
-            -- Freefall-Zustände abfangen
             local function protectHumanoid(humanoid)
                 table.insert(NoFallConnections, humanoid.StateChanged:Connect(function(_, new)
                     if NoFallEnabled and (new == Enum.HumanoidStateType.Freefall or new == Enum.HumanoidStateType.FallingDown) then
@@ -770,7 +724,6 @@ local NoclipToggle = MainTab:CreateToggle({
                 setupCharacter(char)
             end))
 
-            -- Soft-Fall durch Sitzen
             table.insert(NoFallConnections, game:GetService("RunService").Heartbeat:Connect(function()
                 local char = plr.Character
                 if NoFallEnabled and char and char:FindFirstChild("Humanoid") then
@@ -783,7 +736,6 @@ local NoclipToggle = MainTab:CreateToggle({
         end
     })
 
--- Replace your existing Infinite Jump toggle with this improved version:
 
 local InfiniteJumpEnabled = false
 local JumpConnection
@@ -805,15 +757,12 @@ local LastJumpTime = 0
                         if humanoid and rootPart then
                            local currentTime = tick()
                         
-                            -- Prevent spamming
-                            if currentTime - LastJumpTime < 0.2 then return end
+                            if currentTime - LastJumpTime < 0.1 then return end
                            LastJumpTime = currentTime
                         
-                            -- If noclip is enabled, apply direct velocity
                             if noclipEnabled then
                                 rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
                             else
-                                -- Normal jump behavior
                                 humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                             end
                         end
@@ -858,26 +807,19 @@ local LastJumpTime = 0
         end,
     })
 
-----------------------------------------------------
--- Services
-----------------------------------------------------
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-    -- Invisibility Tab
     local InvisTab = Window:CreateTab("| Invisibility", 4483362458)
-
-    -- Variables for invisibility
     local invisEnabled = false
     local invisTransparency = 0.75
     local seatTeleportPosition = Vector3.new(-25.95, 400, 3537.55)
     local currentSeat = nil
     local seatReturnConnection = nil
 
-    -- Function to set character transparency
     local function setCharTransparency(transparency)
         local char = game.Players.LocalPlayer.Character
         if char then
@@ -889,24 +831,20 @@ local Camera = workspace.CurrentCamera
         end
     end
 
-    -- Function to stop invisibility and clean up
     local function stopInvisibility()
         setCharTransparency(0)
         
-        -- Clean up seat
         if currentSeat then
             pcall(function() currentSeat:Destroy() end)
             currentSeat = nil
         end
         
-        -- Stop return connection
         if seatReturnConnection then
             seatReturnConnection:Disconnect()
             seatReturnConnection = nil
         end
     end
 
-    -- Function to start invisibility (seat method)
     local function startInvisibility()
         local player = game.Players.LocalPlayer
         local char = player.Character
@@ -922,7 +860,6 @@ local Camera = workspace.CurrentCamera
             return
         end
         
-        -- Set transparency
         setCharTransparency(invisTransparency)
         
         local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
@@ -935,15 +872,12 @@ local Camera = workspace.CurrentCamera
             })
             return
         end
-        
-        -- Save current position
+
         local savedPos = humanoidRootPart.CFrame
         
-        -- Teleport to seat position
         pcall(function() char:MoveTo(seatTeleportPosition) end)
         task.wait(0.1)
-        
-        -- Check if teleport failed (void)
+
         if not char:FindFirstChild("HumanoidRootPart") or char.HumanoidRootPart.Position.Y < -50 then
             pcall(function() char:MoveTo(savedPos) end)
             setCharTransparency(0)
@@ -957,7 +891,6 @@ local Camera = workspace.CurrentCamera
             return
         end
         
-        -- Create invisible seat
         local seat = Instance.new('Seat')
         seat.Parent = workspace
         seat.Anchored = false
@@ -967,7 +900,6 @@ local Camera = workspace.CurrentCamera
         seat.Position = seatTeleportPosition
         currentSeat = seat
         
-        -- Find torso and weld
         local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
         if torso then
             local weld = Instance.new("Weld")
@@ -978,7 +910,6 @@ local Camera = workspace.CurrentCamera
             task.wait()
             pcall(function() seat.CFrame = savedPos end)
             
-            -- Keep character at seat position
             seatReturnConnection = game:GetService("RunService").Heartbeat:Connect(function()
                 if currentSeat and char and char:FindFirstChild("HumanoidRootPart") then
                     local hrp = char.HumanoidRootPart
@@ -1006,7 +937,6 @@ local Camera = workspace.CurrentCamera
         end
     end
 
-    -- Invisibility Toggle
     InvisTab:CreateToggle({
         Name = "Enable Invisibility",
         CurrentValue = false,
@@ -1021,7 +951,6 @@ local Camera = workspace.CurrentCamera
         end
     })
 
-    -- Transparency Slider
     InvisTab:CreateSlider({
         Name = "Invisibility Transparency",
         Range = {0, 100},
@@ -1037,21 +966,15 @@ local Camera = workspace.CurrentCamera
         end
     })
 
-    -- Clean up when character respawns
     game.Players.LocalPlayer.CharacterAdded:Connect(function()
         if invisEnabled then
-            -- Stop old invisibility
             stopInvisibility()
-            -- Wait for character to load
             task.wait(0.5)
-            -- Restart invisibility
             startInvisibility()
         end
     end)
     
-----------------------------------------------------
--- Aimbot Settings
-----------------------------------------------------
+
 local AimbotEnabled = false
 local MouseAimbotEnabled = false
 local ShowFOV = false
@@ -1062,11 +985,8 @@ local AimbotKey = "T"
 local Smoothness = 0.2
 local CurrentTarget = nil
 local MaxFOVIncrease = 1.5
-local MouseSensitivity = 1.0 -- Mouse movement sensitivity
+local MouseSensitivity = 1.0
 
-----------------------------------------------------
--- Aimbot Tab
-----------------------------------------------------
 local AimbotTab = Window:CreateTab("| Aimbot", 10769687353)
 
 -- Smooth RGB Color Cycle
@@ -1078,7 +998,6 @@ local function GetRGBColor()
     return Color3.new(r, g, b)
 end
 
--- Draw FOV Circle
 local function CreateFOVCircle()
     if FOVCircle then
         FOVCircle:Remove()
@@ -1095,7 +1014,6 @@ local function CreateFOVCircle()
     end
 end
 
--- Update FOV Circle
 RunService.RenderStepped:Connect(function()
     if FOVCircle and ShowFOV then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -1107,33 +1025,27 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Get mouse position
 local function getMousePosition()
     return UserInputService:GetMouseLocation()
 end
 
--- Move mouse to position
 local function moveMouseTo(targetX, targetY)
     local currentMousePos = getMousePosition()
     local deltaX = targetX - currentMousePos.X
     local deltaY = targetY - currentMousePos.Y
-    
-    -- Apply smoothness
+
     local smoothFactor = math.clamp(Smoothness * 10, 1, 20)
     local moveX = deltaX / smoothFactor
     local moveY = deltaY / smoothFactor
-    
-    -- Move mouse relative to current position
+
     mousemoverel(moveX * MouseSensitivity, moveY * MouseSensitivity)
 end
 
--- Find Closest Target for mouse aimbot
 local function GetClosestPlayerForMouse()
     local closestPlayer = CurrentTarget
     local shortestDistance = DynamicFOVRadius * 1.5
     local mousePos = getMousePosition()
 
-    -- Check if current target is still valid
     if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
         local head = closestPlayer.Character.Head
         local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
@@ -1149,7 +1061,6 @@ local function GetClosestPlayerForMouse()
         closestPlayer = nil
     end
 
-    -- Find new target if no valid current target
     if not closestPlayer then
         shortestDistance = DynamicFOVRadius
         for _, player in ipairs(Players:GetPlayers()) do
@@ -1171,7 +1082,6 @@ local function GetClosestPlayerForMouse()
     return closestPlayer
 end
 
--- Mouse Aimbot Loop
 RunService.RenderStepped:Connect(function(deltaTime)
     if MouseAimbotEnabled then
         local target = GetClosestPlayerForMouse()
@@ -1181,7 +1091,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
             local head = target.Character.Head
             local headPos = head.Position
             
-            -- Predictive tracking
             local velocity = head.Velocity
             local prediction = headPos + velocity * 0.1
             
@@ -1191,12 +1100,10 @@ RunService.RenderStepped:Connect(function(deltaTime)
                 local mousePos = getMousePosition()
                 local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
                 
-                -- Dynamic FOV increase if target is near edge
                 if distance > FOVRadius * 0.8 then
                     DynamicFOVRadius = math.min(FOVRadius * MaxFOVIncrease, FOVRadius + distance)
                 end
-                
-                -- Only move mouse if target is within FOV
+
                 if distance <= DynamicFOVRadius then
                     moveMouseTo(screenPos.X, screenPos.Y)
                 end
@@ -1205,7 +1112,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
--- Find Closest Target for camera aimbot (original)
 local function GetClosestPlayer()
     local closestPlayer = CurrentTarget
     local shortestDistance = DynamicFOVRadius * 1.5
@@ -1247,7 +1153,6 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
--- Camera Aimbot Loop (original)
 RunService.RenderStepped:Connect(function(deltaTime)
     if AimbotEnabled then
         local target = GetClosestPlayer()
@@ -1273,29 +1178,24 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
-----------------------------------------------------
--- Rayfield Controls
-----------------------------------------------------
--- Mouse Aimbot Toggle (New)
 AimbotTab:CreateToggle({
     Name = "Enable Mouse Aimbot (PC)",
     CurrentValue = false,
     Callback = function(Value)
         MouseAimbotEnabled = Value
         if Value then
-            AimbotEnabled = false -- Turn off camera aimbot
+            AimbotEnabled = false
         end
     end
 })
 
--- Camera Aimbot Toggle (Renamed)
 AimbotTab:CreateToggle({
     Name = "Enable Camera Aimbot (PC)",
     CurrentValue = false,
     Callback = function(Value)
         AimbotEnabled = Value
         if Value then
-            MouseAimbotEnabled = false -- Turn off mouse aimbot
+            MouseAimbotEnabled = false
         end
     end
 })
@@ -1333,7 +1233,6 @@ AimbotTab:CreateSlider({
     end
 })
 
--- Mouse Sensitivity Slider (New)
 AimbotTab:CreateSlider({
     Name = "Mouse Sensitivity",
     Range = {0.1, 2},
@@ -1356,7 +1255,6 @@ AimbotTab:CreateInput({
     end
 })
 
--- Keybind Toggle
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.UserInputType == Enum.UserInputType.Keyboard then
         if input.KeyCode.Name == AimbotKey then
@@ -1365,9 +1263,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-----------------------------------------------------
--- 📱 Phone GUI System
-----------------------------------------------------
 local PhoneGui
 local PhoneToggleButton
 
@@ -1413,7 +1308,6 @@ local function RemovePhoneGui()
     end
 end
 
--- 📱 Toggle in Rayfield Menu
 AimbotTab:CreateToggle({
     Name = "Phone Aimbot GUI",
     CurrentValue = false,
@@ -1428,7 +1322,6 @@ AimbotTab:CreateToggle({
     end
 })
 
--- TELEPORT TAB
 local TeleportTab = Window:CreateTab("| Teleport", 138281706845765)
 
 local Players = game:GetService("Players")
@@ -1440,7 +1333,6 @@ local customSpawnPosition = nil
 local clickTeleportEnabled = false
 local touchTeleportEnabled = false
 
--- Dropdown for player selection
 local PlayerDropdown = TeleportTab:CreateDropdown({
     Name = "Teleport to Player",
     Options = {},
@@ -1454,7 +1346,6 @@ local PlayerDropdown = TeleportTab:CreateDropdown({
     end,
 })
 
--- Button to teleport to selected player
 TeleportTab:CreateButton({
     Name = "Teleport",
     Callback = function()
@@ -1480,7 +1371,6 @@ TeleportTab:CreateButton({
     end
 })
 
--- Function to update player dropdown
 local function UpdateDropdown()
     local names = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -1491,10 +1381,8 @@ local function UpdateDropdown()
     PlayerDropdown:Refresh(names, true)
 end
 
--- Initialize dropdown
 UpdateDropdown()
 
--- Update dropdown when players join or leave
 Players.PlayerAdded:Connect(function()
     task.wait(0.2)
     UpdateDropdown()
@@ -1505,7 +1393,6 @@ Players.PlayerRemoving:Connect(function()
     UpdateDropdown()
 end)
 
--- Function to set teleport point
 local function setTeleportPoint()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         customTeleportPosition = LocalPlayer.Character.HumanoidRootPart.Position
@@ -1525,7 +1412,6 @@ local function setTeleportPoint()
     end
 end
 
--- Function to set spawn point
 local function setSpawnPoint()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         customSpawnPosition = LocalPlayer.Character.HumanoidRootPart.Position
@@ -1545,7 +1431,6 @@ local function setSpawnPoint()
     end
 end
 
--- Handle character spawn
 LocalPlayer.CharacterAdded:Connect(function(character)
     if customSpawnPosition then
         local hrp = character:WaitForChild("HumanoidRootPart")
@@ -1553,7 +1438,6 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     end
 end)
 
--- Mouse Click TP functionality
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if input.UserInputType == Enum.UserInputType.MouseButton1 and clickTeleportEnabled and not gameProcessedEvent then
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -1584,7 +1468,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     end
 end)
 
--- Touch TP functionality (for phones)
 UserInputService.TouchTap:Connect(function(touchPositions, gameProcessedEvent)
     if touchTeleportEnabled and not gameProcessedEvent and #touchPositions > 0 then
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -1615,13 +1498,11 @@ UserInputService.TouchTap:Connect(function(touchPositions, gameProcessedEvent)
     end
 end)
 
--- Button to set TPpoint
 TeleportTab:CreateButton({
     Name = "Set TPpoint",
     Callback = setTeleportPoint
 })
 
--- Button to teleport to TPpoint
 TeleportTab:CreateButton({
     Name = "Teleport to TPpoint",
     Callback = function()
@@ -1644,13 +1525,11 @@ TeleportTab:CreateButton({
     end
 })
 
--- Button to set spawn point
 TeleportTab:CreateButton({
     Name = "Change Spawn Point",
     Callback = setSpawnPoint
 })
 
--- Toggle for Mouse Click TP
 TeleportTab:CreateToggle({
     Name = "Enable Click TP",
     CurrentValue = false,
@@ -1665,7 +1544,6 @@ TeleportTab:CreateToggle({
     end
 })
 
--- Toggle for Touch TP (Phone)
 TeleportTab:CreateToggle({
     Name = "Enable Click TP (Phone)",
     CurrentValue = false,
@@ -1680,10 +1558,6 @@ TeleportTab:CreateToggle({
     end
 })
 
-
----------------------------------------------------------------------
--- 🧭 Utility
----------------------------------------------------------------------
 local function GetVehicleFromDescendant(Descendant)
 	return
 		Descendant:FindFirstAncestor(LocalPlayer.Name .. "'s Car") or
@@ -1692,9 +1566,6 @@ local function GetVehicleFromDescendant(Descendant)
 		Descendant:FindFirstAncestorWhichIsA("Model")
 end
 
----------------------------------------------------------------------
--- 🚗 Variables
----------------------------------------------------------------------
 local flightEnabled = false
 local throttleEnabled = false
 local brakeEnabled = false
@@ -1704,9 +1575,6 @@ local flightSpeed = 1
 local accelPower = 0.025
 local brakePower = 0.15
 
----------------------------------------------------------------------
--- 🪂 Vehicle Tab
----------------------------------------------------------------------
 local vehicleTab = Window:CreateTab("| Vehicle", 13773498965)
 
 vehicleTab:CreateToggle({
@@ -1782,9 +1650,6 @@ vehicleTab:CreateSlider({
 	end
 })
 
----------------------------------------------------------------------
--- 🛞 Flight + Vehicle Control
----------------------------------------------------------------------
 RunService.Stepped:Connect(function()
 	local Character = LocalPlayer.Character
 	if not Character then return end
@@ -1816,9 +1681,6 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
----------------------------------------------------------------------
--- ⚙️ Acceleration + Brake
----------------------------------------------------------------------
 task.spawn(function()
 	while true do
 		task.wait(0.02)
@@ -1838,10 +1700,8 @@ task.spawn(function()
 end)
    
 
-    -- Camera Tab
     local CameraTab = Window:CreateTab("| Camera", 16060788318)
 
-    -- Camera Variables
     local freecamEnabled = false
     local freecamKey = "F4"
     local freecamSpeed = 50
@@ -1855,17 +1715,14 @@ end)
     local cameraRotationX = 0
     local cameraRotationY = 0
 
-    -- Store camera state
     local function storeCameraState()
         originalCameraCFrame = Camera.CFrame
         originalCameraSubject = Camera.CameraSubject
-        -- Store initial rotation angles
         local lookVector = Camera.CFrame.LookVector
         cameraRotationY = math.asin(lookVector.Y)
         cameraRotationX = math.atan2(lookVector.X, lookVector.Z)
     end
 
-    -- Restore camera state
     local function restoreCameraState()
         if originalCameraCFrame then
             Camera.CFrame = originalCameraCFrame
@@ -1875,7 +1732,6 @@ end)
         end
     end
 
-    -- Lock character movement
     local function lockCharacter()
         local character = LocalPlayer.Character
         if character then
@@ -1886,20 +1742,17 @@ end)
                 humanoid.JumpPower = 0
             end
             
-            -- Anchor the character
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             if rootPart then
                 rootPart.Anchored = true
             end
-            
-            -- Disable controls
+
             if humanoid then
                 humanoid.AutoRotate = false
             end
         end
     end
 
-    -- Unlock character movement
     local function unlockCharacter()
         local character = LocalPlayer.Character
         if character then
@@ -1909,8 +1762,7 @@ end)
                 humanoid.JumpPower = 50
                 humanoid.AutoRotate = true
             end
-            
-            -- Unanchor the character
+
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             if rootPart then
                 rootPart.Anchored = false
@@ -1918,21 +1770,16 @@ end)
         end
     end
 
-    -- Start Freecam
     local function startFreecam()
         if freecamEnabled then return end
         freecamEnabled = true
         
-        -- Store current camera state
         storeCameraState()
         
-        -- Store current camera position
         freecamPosition = Camera.CFrame
         
-        -- Lock character
         lockCharacter()
         
-        -- Set camera to free mode
         Camera.CameraType = Enum.CameraType.Scriptable
         Camera.CameraSubject = nil
         
@@ -1944,22 +1791,17 @@ end)
         })
     end
 
-    -- Stop Freecam
     local function stopFreecam()
         if not freecamEnabled then return end
         freecamEnabled = false
         
-        -- Save current position before restoring
         freecamPosition = Camera.CFrame
         
-        -- Restore camera
         restoreCameraState()
         Camera.CameraType = Enum.CameraType.Custom
-        
-        -- Unlock character
+
         unlockCharacter()
-        
-        -- Release mouse if locked
+
         if mouseLocked then
             UserInputService.MouseBehavior = Enum.MouseBehavior.Default
             mouseLocked = false
@@ -1974,7 +1816,6 @@ end)
         })
     end
 
-    -- Toggle Freecam
     local function toggleFreecam()
         if freecamEnabled then
             stopFreecam()
@@ -1983,7 +1824,6 @@ end)
         end
     end
 
-    -- Handle right click for mouse look
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not freecamEnabled then return end
         
@@ -2006,38 +1846,30 @@ end)
         end
     end)
 
-    -- Freecam Movement
     freecamConnection = RunService.RenderStepped:Connect(function()
         if not freecamEnabled then return end
-        
-        -- Mouse Look when right click is held
+
         if rightClickHeld then
             local mouseDelta = UserInputService:GetMouseDelta()
             local sensitivity = 0.2
-            
-            -- Update rotation angles (prevent tilting)
+
             cameraRotationX = cameraRotationX - math.rad(mouseDelta.X * sensitivity)
             cameraRotationY = math.clamp(cameraRotationY - math.rad(mouseDelta.Y * sensitivity), -math.rad(89), math.rad(89))
-            
-            -- Create rotation without tilt (keep camera upright)
+
             local horizontalRotation = CFrame.Angles(0, cameraRotationX, 0)
             local verticalRotation = CFrame.Angles(cameraRotationY, 0, 0)
-            
-            -- Apply rotation to camera position
+
             Camera.CFrame = CFrame.new(Camera.CFrame.Position) * horizontalRotation * verticalRotation
-            
-            -- Update freecam position
+
             freecamPosition = Camera.CFrame
         end
         
         local moveVector = Vector3.new(0, 0, 0)
         local speed = freecamSpeed * 0.1
         
-        -- WASD Movement (relative to camera direction, but horizontal only)
         local cameraForward = Camera.CFrame.LookVector
         local cameraRight = Camera.CFrame.RightVector
         
-        -- Keep movement horizontal (no flying up/down with WASD)
         local forward = Vector3.new(cameraForward.X, 0, cameraForward.Z).Unit
         local right = Vector3.new(cameraRight.X, 0, cameraRight.Z).Unit
         
@@ -2054,7 +1886,6 @@ end)
             moveVector += right
         end
         
-        -- Up/Down Movement (always vertical)
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             moveVector += Vector3.new(0, 1, 0)
         end
@@ -2062,12 +1893,10 @@ end)
             moveVector -= Vector3.new(0, 1, 0)
         end
         
-        -- Speed boost with LeftControl
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
             speed = speed * 3
         end
         
-        -- Apply movement
         if moveVector.Magnitude > 0 then
             moveVector = moveVector.Unit
             Camera.CFrame = Camera.CFrame + (moveVector * speed)
@@ -2076,7 +1905,6 @@ end)
         end
     end)
 
-    -- Teleport to Freecam
     local function teleportToFreecam()
         if not freecamPosition then
             Rayfield:Notify({
@@ -2088,18 +1916,14 @@ end)
             return
         end
         
-        -- Store target position
         local targetPos = freecamPosition.Position
         
-        -- Stop freecam if active
         if freecamEnabled then
             stopFreecam()
         end
         
-        -- Wait a frame for character to unlock
         task.wait()
         
-        -- Teleport character
         local character = LocalPlayer.Character
         if not character or not character:FindFirstChild("HumanoidRootPart") then
             Rayfield:Notify({
@@ -2109,7 +1933,6 @@ end)
                 Image = 16060788318
             })
             
-            -- Wait for character to respawn
             local newCharacter = LocalPlayer.CharacterAdded:Wait()
             task.wait(0.5)
             if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
@@ -2118,7 +1941,6 @@ end)
             return
         end
         
-        -- Teleport to saved position
         character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
         
         Rayfield:Notify({
@@ -2129,7 +1951,6 @@ end)
         })
     end
 
-    -- Keybind for Freecam toggle
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
@@ -2138,7 +1959,6 @@ end)
         end
     end)
 
-    -- Freecam Toggle
     CameraTab:CreateToggle({
         Name = "Enable Freecam",
         CurrentValue = false,
@@ -2151,7 +1971,6 @@ end)
         end
     })
 
-    -- Freecam Speed Slider
     CameraTab:CreateSlider({
         Name = "Freecam Speed",
         Range = {10, 500},
@@ -2163,7 +1982,6 @@ end)
         end
     })
 
-    -- Freecam Keybind Input
     CameraTab:CreateInput({
         Name = "Freecam Toggle Key",
         PlaceholderText = "Default: F4",
@@ -2181,7 +1999,6 @@ end)
         end
     })
 
-    -- Teleport to Freecam Button
     CameraTab:CreateButton({
         Name = "Teleport to Freecam",
         Callback = function()
@@ -2189,7 +2006,6 @@ end)
         end
     })
 
-    -- Instructions
     CameraTab:CreateParagraph({
         Title = "Freecam Controls",
         Content = [[
@@ -2203,10 +2019,8 @@ Hold Right Click - Look around
         ]]
     })
 
-    -- Settings Tab
     local SettingsTab = Window:CreateTab("| Settings", 6034509993)
 
-    -- ArrayList Variables
     local ArrayListEnabled = false
     local ArrayListPosition = "Right Top"
     local ArrayListColor = "White"
@@ -2217,7 +2031,6 @@ Hold Right Click - Look around
     local ArrayListLabels = {}
     local ArrayListAnimations = {}
     
-    -- ArrayList Colors
     local ArrayListColors = {
         ["White"] = Color3.fromRGB(255, 255, 255),
         ["Red"] = Color3.fromRGB(255, 0, 0),
@@ -2231,7 +2044,6 @@ Hold Right Click - Look around
         ["Rainbow"] = Color3.fromRGB(255, 255, 255)
     }
     
-    -- Function to get rainbow color
     local function getRainbowColor()
         local time = tick() * 3
         local r = (math.sin(time) + 1) / 2
@@ -2240,7 +2052,6 @@ Hold Right Click - Look around
         return Color3.fromRGB(r * 255, g * 255, b * 255)
     end
 
-    -- Function to animate label appearing
     local function animateLabelIn(label)
         label.BackgroundTransparency = 1
         label.TextTransparency = 1
@@ -2258,7 +2069,6 @@ Hold Right Click - Look around
             end
             
             local alpha = elapsed / duration
-            -- Smooth easing
             alpha = alpha * alpha * (3 - 2 * alpha)
             
             label.TextTransparency = 1 - alpha
@@ -2287,7 +2097,6 @@ Hold Right Click - Look around
         end)
     end
 
-    -- Function to check which cheats are enabled
     local function getEnabledCheats()
         local cheats = {}
         
@@ -2325,16 +2134,13 @@ Hold Right Click - Look around
         return cheats
     end
 
-    -- Function to create ArrayList
     local function createArrayList()
-        -- Clean up existing
         if ArrayListGui then
             ArrayListGui:Destroy()
             ArrayListGui = nil
         end
         ArrayListLabels = {}
-        
-        -- Clear animations
+
         for _, conn in pairs(ArrayListAnimations) do
             conn:Disconnect()
         end
@@ -2350,7 +2156,6 @@ Hold Right Click - Look around
         ArrayListGui.IgnoreGuiInset = true
         ArrayListGui.Parent = player:WaitForChild("PlayerGui")
         
-        -- Create container frame
         ArrayListFrame = Instance.new("Frame")
         ArrayListFrame.Name = "Container"
         ArrayListFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -2359,28 +2164,24 @@ Hold Right Click - Look around
         ArrayListFrame.Size = UDim2.new(0, 200, 0, 0)
         ArrayListFrame.Parent = ArrayListGui
         
-        -- Add corner rounding
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(0, 6)
         corner.Parent = ArrayListFrame
-        
-        -- Add padding
+
         local padding = Instance.new("UIPadding")
         padding.PaddingLeft = UDim.new(0, 12)
         padding.PaddingRight = UDim.new(0, 12)
         padding.PaddingTop = UDim.new(0, 10)
         padding.PaddingBottom = UDim.new(0, 10)
         padding.Parent = ArrayListFrame
-        
-        -- Create list layout - goes from bottom to top for better display
+
         local layout = Instance.new("UIListLayout")
         layout.Padding = UDim.new(0, 4)
         layout.SortOrder = Enum.SortOrder.Name
         layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         layout.Parent = ArrayListFrame
-        
-        -- Set position based on selection
+
         if ArrayListPosition == "Right Top" then
             ArrayListFrame.AnchorPoint = Vector2.new(1, 0)
             ArrayListFrame.Position = UDim2.new(1, -10, 0, 10)
@@ -2398,13 +2199,11 @@ Hold Right Click - Look around
             ArrayListFrame.Position = UDim2.new(0, 10, 1, -10)
             layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
         end
-        
-        -- Start update connection
+
         local lastCheats = {}
         ArrayListUpdateConnection = RunService.RenderStepped:Connect(function()
             local currentCheats = getEnabledCheats()
-            
-            -- Check if cheats changed
+
             local changed = false
             if #currentCheats ~= #lastCheats then
                 changed = true
@@ -2419,22 +2218,19 @@ Hold Right Click - Look around
             
             if changed then
                 lastCheats = currentCheats
-                
-                -- Clear animations
+
                 for _, conn in pairs(ArrayListAnimations) do
                     conn:Disconnect()
                 end
                 ArrayListAnimations = {}
                 
-                -- Remove old cheat labels
                 for _, child in pairs(ArrayListFrame:GetChildren()) do
                     if child:IsA("TextLabel") then
                         child:Destroy()
                     end
                 end
                 ArrayListLabels = {}
-                
-                -- Create new cheat labels with animation
+
                 for i, cheat in ipairs(currentCheats) do
                     local label = Instance.new("TextLabel")
                     label.Name = "Cheat_" .. i
@@ -2447,7 +2243,6 @@ Hold Right Click - Look around
                     label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                     label.Parent = ArrayListFrame
                     
-                    -- Set text alignment based on position
                     if ArrayListPosition == "Right Top" or ArrayListPosition == "Right Bottom" then
                         label.TextXAlignment = Enum.TextXAlignment.Right
                     else
@@ -2460,7 +2255,6 @@ Hold Right Click - Look around
                         label.TextColor3 = ArrayListColors[ArrayListColor] or Color3.fromRGB(255, 255, 255)
                     end
                     
-                    -- Animate label appearing with slight delay
                     local delay = i * 0.05
                     task.delay(delay, function()
                         if label and label.Parent then
@@ -2472,7 +2266,6 @@ Hold Right Click - Look around
                 end
             end
             
-            -- Update rainbow colors
             if ArrayListRainbow then
                 local rainbowColor = getRainbowColor()
                 for _, label in pairs(ArrayListLabels) do
@@ -2484,7 +2277,6 @@ Hold Right Click - Look around
         end)
     end
 
-    -- Function to destroy ArrayList
     local function destroyArrayList()
         if ArrayListUpdateConnection then
             ArrayListUpdateConnection:Disconnect()
@@ -2503,7 +2295,6 @@ Hold Right Click - Look around
         ArrayListLabels = {}
     end
 
-    -- Theme Dropdown
     local themeNames = {}
     for name, _ in pairs(Themes) do table.insert(themeNames, name) end
 
@@ -2519,7 +2310,6 @@ Hold Right Click - Look around
         end
     })
 
-    -- ArrayList Toggle
     SettingsTab:CreateToggle({
         Name = "Enable ArrayList",
         CurrentValue = false,
@@ -2533,7 +2323,6 @@ Hold Right Click - Look around
         end
     })
 
-    -- ArrayList Position Dropdown
     local positionNames = {"Right Top", "Right Bottom", "Left Top", "Left Bottom"}
 
     SettingsTab:CreateDropdown({
@@ -2553,7 +2342,6 @@ Hold Right Click - Look around
         end
     })
 
-    -- ArrayList Color Dropdown
     local colorNames = {"White", "Red", "Blue", "Green", "Yellow", "Purple", "Orange", "Pink", "Cyan", "Rainbow"}
 
     SettingsTab:CreateDropdown({
@@ -2682,7 +2470,6 @@ Hold Right Click - Look around
     return Window
 end
 
--- Überprüfung und Aufruf der Funktion
 if CreateWindow == nil then
     error("CreateWindow is not defined!")
     return

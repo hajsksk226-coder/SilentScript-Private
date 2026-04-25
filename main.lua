@@ -251,7 +251,6 @@ local function CreateWindow(theme)
     local NoclipToggle = MainTab:CreateToggle({
         Name = "Noclip",
         CurrentValue = false,
-        Flag = "NoclipToggle",
         Callback = function(Value)
             setNoclip(Value)
         end,

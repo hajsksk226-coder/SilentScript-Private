@@ -146,84 +146,107 @@ local function CreateWindow(theme)
 
         if flying then
             stopFly()
+            task.wait(0.1)
+            startFly()
         end
-
-        task.wait(0.1)
-        startFly()
-        stopFly()
     end)
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local player = Players.LocalPlayer
 
-local noclipEnabled = false
-local noclipConnection = nil
+    local noclipEnabled = false
+    local noclipConnection = nil
 
-local function setCollision(state)
-    local char = player.Character
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = state
+    -- This function is kept now unused; we'll directly manipulate parts.
+    local function setNoclip(state)
+        noclipEnabled = state
+        if state then
+            -- Enable noclip
+            if not player.Character then
+                player.CharacterAdded:Wait()
             end
-        end
-        if not state then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if humanoid.Sit then
-                    humanoid.Sit = false
+            -- Turn off collisions on immediate children (same as working GUI)
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
                 end
-                humanoid.Jump = true
+            end
+            noclipConnection = RunService.Stepped:Connect(function()
+                if noclipEnabled and player.Character then
+                    for _, part in pairs(player.Character:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            -- Disable noclip exactly like the GUI version
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+
+            local char = player.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Anchored = true
+                end
+
+                -- Re-enable collisions on immediate children
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+
+                if hrp then
+                    task.wait(0.05)
+                    -- 2.5 stud lift
+                    hrp.CFrame = hrp.CFrame + Vector3.new(0, 2.5, 0)
+                    hrp.Velocity = Vector3.zero
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.Anchored = false
+                end
             end
         end
     end
-end
 
-local function setNoclip(state)
-    noclipEnabled = state
-    if state then
-        if not player.Character then
-            player.CharacterAdded:Wait()
-        end
-        setCollision(false)
-        noclipConnection = RunService.Stepped:Connect(function()
-            if noclipEnabled and player.Character then
-                setCollision(false)
+    -- Respawn handling (only if noclip was active)
+    player.CharacterAdded:Connect(function(char)
+        if noclipEnabled then
+            char:WaitForChild("HumanoidRootPart", 5)
+            task.wait(0.1)
+            for _, part in pairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
             end
-        end)
-    else
-        if noclipConnection then
-            noclipConnection:Disconnect()
-            noclipConnection = nil
+            if noclipConnection then
+                noclipConnection:Disconnect()
+            end
+            noclipConnection = RunService.Stepped:Connect(function()
+                if noclipEnabled and player.Character then
+                    for _, part in pairs(player.Character:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
         end
-        setCollision(true)
-    end
-end
+    end)
 
-player.CharacterAdded:Connect(function(char)
-    char:WaitForChild("HumanoidRootPart", 5)
-    task.wait(0.1)
-    if noclipEnabled then
-        setCollision(false)
-    else
-        setCollision(true)
-    end
-end)
-
-if player.Character then
-    task.wait(0.1)
-    setCollision(true)
-end
-
-local NoclipToggle = MainTab:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Flag = "NoclipToggle",
-    Callback = function(Value)
-        setNoclip(Value)
-    end,
-})
+    local NoclipToggle = MainTab:CreateToggle({
+        Name = "Noclip",
+        CurrentValue = false,
+        Flag = "NoclipToggle",
+        Callback = function(Value)
+            setNoclip(Value)
+        end,
+    })
 
     local ESPDrawings = {}
     local ESPConnections = {}

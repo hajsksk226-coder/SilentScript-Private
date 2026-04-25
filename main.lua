@@ -29,21 +29,27 @@ local function CreateWindow(theme)
     local Window = Rayfield:CreateWindow({
         Name =  "Silent Scripts V3.0 (Comeback)",
         Icon = 72666860753983,
-        LoadingTitle = "Loading...",
-        LoadingSubtitle = "by Pingz0 | Idea´s by Pyrotec_7",
+        LoadingTitle = "SilentScript made by Pingz0 | Idea´s by Pyrotec_7",
+        LoadingSubtitle = "Loading SilentScript...",
         ShowText = "Silent Script",
         Theme = theme or "Amethyst",
         ToggleUIKeybind = "K",
         DisableRayfieldPrompts = true,
         DisableBuildWarnings = true,
-        ConfigurationSaving = { Enabled = false },
-        KeySystem = false
+        KeySystem = false,
+        FileName = "SilentScript",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "SilentScriptConfig", -- Defaults to "RayfieldConfigs"
+            FileName = "SilentScriptConfig"
+        }
     })
 
     local MainTab = Window:CreateTab("| Main", 8772194322)
 
     MainTab:CreateSlider({
         Name = "Speed Hack",
+        Flag = "SpeedHackEnabled",
         Range = {16, 250},
         Increment = 1,
         Suffix = " WalkSpeed",
@@ -56,6 +62,7 @@ local function CreateWindow(theme)
     MainTab:CreateSlider({
         Name = "Jump Hack",
         Range = {50, 250},
+        Flag = "JumpHackEnabled",
         Increment = 5,
         Suffix = " JumpPower",
         CurrentValue = 50,
@@ -69,6 +76,7 @@ local function CreateWindow(theme)
     MainTab:CreateSlider({
         Name = "Fly Speed",
         Range = {1, 100},
+        Flag = "FlySpeed",
         Increment = 1,
         Suffix = "x",
         CurrentValue = FlySpeed,
@@ -125,6 +133,7 @@ local function CreateWindow(theme)
 
     MainTab:CreateButton({
         Name = "Toggle Fly",
+        Flag = "FlightEnabled",
         Callback = function()
             if flying then
                 stopFly()
@@ -571,6 +580,7 @@ local function CreateWindow(theme)
 
     ESPTab:CreateToggle({
         Name = "Enable ESP",
+        Flag = "ESPEnabled",
         CurrentValue = false,
         Callback = function(state)
             ESPEnabled = state
@@ -629,6 +639,7 @@ local function CreateWindow(theme)
 
     ESPTab:CreateToggle({
         Name = "Chams (See Through Walls)",
+        Flag = "ChamsEnabled",
         CurrentValue = false,
         Callback = function(state)
             ChamsEnabled = state
@@ -640,6 +651,7 @@ local function CreateWindow(theme)
 
     ESPTab:CreateToggle({
         Name = "Enable Tracers",
+        Flag = "TracersEnabled",
         CurrentValue = false,
         Callback = function(state)
             TracersEnabled = state
@@ -660,6 +672,7 @@ local function CreateWindow(theme)
     ESPTab:CreateDropdown({
         Name = "ESP Color",
         Options = colorNames,
+        Flag = "ESPColor",
         CurrentOption = {"Red"},
         MultipleOptions = false,
         Callback = function(option)
@@ -709,6 +722,7 @@ local function CreateWindow(theme)
 
     MainTab:CreateToggle({
         Name = "No Fall Damage",
+        Flag = "NoFallEnabled",
         CurrentValue = false,
         Callback = function(state)
             NoFallEnabled = state
@@ -773,6 +787,7 @@ local LastJumpTime = 0
 
     MainTab:CreateToggle({
         Name = "Infinite Jump",
+        Flag = "InfiniteJumpEnabled",
         CurrentValue = false,
         Callback = function(state)
             InfiniteJumpEnabled = state
@@ -814,6 +829,7 @@ local LastJumpTime = 0
 
     MainTab:CreateToggle({
         Name = "Anti-AFK (Auto Jump)",
+        Flag = "AntiAFKEnabled",
         CurrentValue = false,
         Callback = function(state)
             AntiAFKEnabled = state
@@ -969,6 +985,7 @@ local Camera = workspace.CurrentCamera
 
     InvisTab:CreateToggle({
         Name = "Enable Invisibility",
+        Flag = "InvisEnabled",
         CurrentValue = false,
         Callback = function(state)
             invisEnabled = state
@@ -986,6 +1003,7 @@ local Camera = workspace.CurrentCamera
         Range = {0, 100},
         Increment = 5,
         Suffix = "%",
+        Flag = "InvisTransparency",
         CurrentValue = 75,
         Callback = function(value)
             invisTransparency = value / 100
@@ -1136,6 +1154,7 @@ end)
     -- Prediction Toggle
 AimbotTab:CreateToggle({
     Name = "Enable Prediction",
+    Flag = "PredictionEnabled",
     CurrentValue = false,
     Callback = function(Value)
         PredictionEnabled = Value
@@ -1146,6 +1165,7 @@ AimbotTab:CreateToggle({
 AimbotTab:CreateSlider({
     Name = "Prediction Amount",
     Range = {0.01, 0.5},
+    Flag = "PredictionAmount",
     Increment = 0.01,
     Suffix = "s",
     CurrentValue = 0.1,
@@ -1339,6 +1359,7 @@ end)
 
 AimbotTab:CreateToggle({
     Name = "Enable Mouse Aimbot (PC)",
+    Flag = "MouseAimbotEnabled",
     CurrentValue = false,
     Callback = function(Value)
         MouseAimbotEnabled = Value
@@ -1350,6 +1371,7 @@ AimbotTab:CreateToggle({
 
 AimbotTab:CreateToggle({
     Name = "Enable Camera Aimbot (PC)",
+    Flag = "CamAimbotEnabled",
     CurrentValue = false,
     Callback = function(Value)
         AimbotEnabled = Value
@@ -1362,6 +1384,7 @@ AimbotTab:CreateToggle({
 -- Crosshair Triggerbot Toggle
 AimbotTab:CreateToggle({
     Name = "Triggerbot (Crosshair)",
+    Flag = "TriggerbotCrosshairEnabled",
     CurrentValue = false,
     Callback = function(Value)
         TriggerbotCrosshairEnabled = Value
@@ -1375,6 +1398,7 @@ AimbotTab:CreateToggle({
 -- Mouse Triggerbot Toggle
 AimbotTab:CreateToggle({
     Name = "Triggerbot (Mouse)",
+    Flag = "TriggerbotMouseEnabled",
     CurrentValue = false,
     Callback = function(Value)
         TriggerbotMouseEnabled = Value
@@ -1387,6 +1411,7 @@ AimbotTab:CreateToggle({
 
 AimbotTab:CreateToggle({
     Name = "Show FOV Circle",
+    Flag = "FOVCircleEnabled",
     CurrentValue = false,
     Callback = function(Value)
         ShowFOV = Value
@@ -1398,6 +1423,7 @@ AimbotTab:CreateSlider({
     Name = "FOV Changer",
     Range = {50, 500},
     Increment = 10,
+    Flag = "FOVRadius",
     Suffix = "px",
     CurrentValue = 100,
     Callback = function(Value)
@@ -1410,6 +1436,7 @@ AimbotTab:CreateSlider({
 AimbotTab:CreateSlider({
     Name = "Aimbot Smoothness",
     Range = {0.05, 1},
+    Flag = "AimbotSmoothness",
     Increment = 0.01,
     Suffix = "factor",
     CurrentValue = 0.2,
@@ -1422,6 +1449,7 @@ AimbotTab:CreateSlider({
     Name = "Mouse Sensitivity",
     Range = {0.1, 2},
     Increment = 0.1,
+    Flag = "MouseSensitivity",
     Suffix = "x",
     CurrentValue = 1.0,
     Callback = function(Value)
@@ -1432,6 +1460,7 @@ AimbotTab:CreateSlider({
 AimbotTab:CreateInput({
     Name = "Aimbot Key (PC)",
     PlaceholderText = "Default: T",
+    Flag = "AimbotKey",
     RemoveTextAfterFocusLost = false,
     Callback = function(Text)
         if Text and #Text > 0 then
@@ -1495,6 +1524,7 @@ end
 
 AimbotTab:CreateToggle({
     Name = "Phone Aimbot GUI",
+    Flag = "PhoneAimbotGuiEnabled",
     CurrentValue = false,
     Callback = function(Value)
         if Value then
@@ -1717,6 +1747,7 @@ TeleportTab:CreateButton({
 
 TeleportTab:CreateToggle({
     Name = "Enable Click TP",
+    Flag = "ClickTpEnabled",
     CurrentValue = false,
     Callback = function(value)
         clickTeleportEnabled = value
@@ -1731,6 +1762,7 @@ TeleportTab:CreateToggle({
 
 TeleportTab:CreateToggle({
     Name = "Enable Click TP (Phone)",
+    Flag = "ClickTPPhoneEnabled",
     CurrentValue = false,
     Callback = function(value)
         touchTeleportEnabled = value
@@ -1764,6 +1796,7 @@ local vehicleTab = Window:CreateTab("| Vehicle", 13773498965)
 
 vehicleTab:CreateToggle({
 	Name = "Flight Mode (move with WASD + QE)",
+    Flag = "FlightModeEnabled",
 	CurrentValue = false,
 	Callback = function(v)
 		flightEnabled = v
@@ -1772,6 +1805,7 @@ vehicleTab:CreateToggle({
 
 vehicleTab:CreateToggle({
 	Name = "Full Throttle (triggered with W)",
+    Flag = "FullThrottleEnabled",
 	CurrentValue = false,
 	Callback = function(v)
 		throttleEnabled = v
@@ -1780,6 +1814,7 @@ vehicleTab:CreateToggle({
 
 vehicleTab:CreateToggle({
 	Name = "Quick Brake (triggered with S)",
+    Flag = "QuickBrakeEnabled",
 	CurrentValue = false,
 	Callback = function(v)
 		brakeEnabled = v
@@ -1807,6 +1842,7 @@ vehicleTab:CreateToggle({
 
 vehicleTab:CreateSlider({
 	Name = "Flight Speed",
+    Flag = "FlightSpeed",
 	Range = {0.5, 10},
 	Increment = 0.5,
 	CurrentValue = 1,
@@ -1817,6 +1853,7 @@ vehicleTab:CreateSlider({
 
 vehicleTab:CreateSlider({
 	Name = "Acceleration Power",
+    Flag = "AccelerationPower",
 	Range = {0.01, 0.1},
 	Increment = 0.005,
 	CurrentValue = 0.025,
@@ -1827,6 +1864,7 @@ vehicleTab:CreateSlider({
 
 vehicleTab:CreateSlider({
 	Name = "Brake Power",
+    Flag = "BrakePower",
 	Range = {0.05, 0.3},
 	Increment = 0.01,
 	CurrentValue = 0.15,
@@ -2146,6 +2184,7 @@ end)
 
     CameraTab:CreateToggle({
         Name = "Enable Freecam",
+        Flag = "FreecamEnabled",
         CurrentValue = false,
         Callback = function(state)
             if state then
@@ -2158,6 +2197,7 @@ end)
 
     CameraTab:CreateSlider({
         Name = "Freecam Speed",
+        Flag = "FreecamSpeed",
         Range = {10, 500},
         Increment = 10,
         Suffix = " studs/s",
@@ -2169,6 +2209,7 @@ end)
 
     CameraTab:CreateInput({
         Name = "Freecam Toggle Key",
+        Flag = "FreecamKey",
         PlaceholderText = "Default: F4",
         RemoveTextAfterFocusLost = false,
         Callback = function(text)
@@ -2486,6 +2527,7 @@ Hold Right Click - Look around
     SettingsTab:CreateDropdown({
         Name = "Select Theme",
         Options = themeNames,
+        Flag = "Theme",
         CurrentOption = {SelectedTheme},
         MultipleOptions = false,
         Callback = function(option)
@@ -2497,6 +2539,7 @@ Hold Right Click - Look around
 
     SettingsTab:CreateToggle({
         Name = "Enable ArrayList",
+        Flag = "ArrayListEnabled",
         CurrentValue = false,
         Callback = function(state)
             ArrayListEnabled = state
@@ -2514,6 +2557,7 @@ Hold Right Click - Look around
         Name = "ArrayList Position",
         Options = positionNames,
         CurrentOption = {"Right Top"},
+        Flag = "ArrayListPosition",
         MultipleOptions = false,
         Callback = function(option)
             local pos = option
@@ -2532,6 +2576,7 @@ Hold Right Click - Look around
     SettingsTab:CreateDropdown({
         Name = "ArrayList Color",
         Options = colorNames,
+        Flag = "ArrayListColor",
         CurrentOption = {"White"},
         MultipleOptions = false,
         Callback = function(option)
@@ -2636,6 +2681,13 @@ Hold Right Click - Look around
         
         destroyArrayList()
     end
+
+    SettingsTab:CreateButton({
+        Name = "Load Config",
+        Callback = function()
+            Rayfield:LoadConfiguration()
+        end
+    })   
 
     SettingsTab:CreateButton({
         Name = "Apply Theme (Resets all Cheats!)",
